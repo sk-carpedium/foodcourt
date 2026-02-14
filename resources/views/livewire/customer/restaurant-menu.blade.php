@@ -72,125 +72,78 @@
     </section>
 
     <div class="max-w-7xl mx-auto px-3 sm:px-6 lg:px-8 py-4 sm:py-8">
-        <div class="flex flex-col lg:flex-row gap-4 sm:gap-8">
-            <!-- Mobile: Categories as horizontal scroll, Desktop: Sidebar -->
-            <div class="lg:w-1/4">
-                <!-- Mobile Categories (Horizontal Scroll) -->
-                <div class="lg:hidden mb-6">
-                    <h2 class="text-lg font-semibold mb-3 text-gray-900 px-1">Menu Categories</h2>
-                    <div class="flex space-x-2 overflow-x-auto pb-2 px-1">
-                        <button wire:click="selectCategory(null)" 
-                            class="flex-shrink-0 px-4 py-2 rounded-full text-sm font-medium transition-colors {{ $selectedCategory === null ? 'bg-blue-600 text-white' : 'bg-gray-100 text-gray-700 hover:bg-gray-200' }}">
-                            All Items ({{ $menuItems->count() }})
-                        </button>
-                        @foreach ($categories as $category)
-                            <button wire:click="selectCategory({{ $category->id }})" 
-                                class="flex-shrink-0 px-4 py-2 rounded-full text-sm font-medium transition-colors {{ $selectedCategory == $category->id ? 'bg-blue-600 text-white' : 'bg-gray-100 text-gray-700 hover:bg-gray-200' }}">
-                                {{ $category->name }} ({{ $category->activeMenuItems->count() }})
-                            </button>
-                        @endforeach
-                    </div>
-                </div>
+        <!-- Menu Items Header -->
+        <div class="mb-4 sm:mb-6 px-1">
+            <h2 class="text-xl sm:text-2xl font-bold text-gray-900">Menu</h2>
+            <p class="text-gray-600 mt-1 text-sm sm:text-base">{{ $menuItems->count() }} items available</p>
+        </div>
 
-                <!-- Desktop Categories (Sidebar) -->
-                <div class="hidden lg:block bg-white rounded-lg shadow-sm border p-6 sticky top-24">
-                    <h2 class="text-lg font-semibold mb-4 text-gray-900">Menu Categories</h2>
-                    <ul class="space-y-2">
-                        <li>
-                            <button wire:click="selectCategory(null)" 
-                                class="w-full text-left px-3 py-2 rounded-lg transition-colors {{ $selectedCategory === null ? 'bg-blue-100 text-blue-700 font-medium' : 'hover:bg-gray-100 text-gray-700' }}">
-                                All Items
-                                <span class="text-sm text-gray-500 ml-2">({{ $menuItems->count() }})</span>
-                            </button>
-                        </li>
-                        @foreach ($categories as $category)
-                            <li>
-                                <button wire:click="selectCategory({{ $category->id }})" 
-                                    class="w-full text-left px-3 py-2 rounded-lg transition-colors {{ $selectedCategory == $category->id ? 'bg-blue-100 text-blue-700 font-medium' : 'hover:bg-gray-100 text-gray-700' }}">
-                                    {{ $category->name }}
-                                    <span class="text-sm text-gray-500 ml-2">({{ $category->activeMenuItems->count() }})</span>
-                                </button>
-                            </li>
-                        @endforeach
-                    </ul>
-                </div>
-            </div>
+        <!-- Menu Items Grid -->
+        @php
+            $gradients = [
+                'from-red-400 to-red-600',
+                'from-orange-400 to-orange-600',
+                'from-amber-400 to-amber-600',
+                'from-pink-400 to-pink-600',
+                'from-rose-400 to-rose-600',
+                'from-fuchsia-400 to-fuchsia-600',
+                'from-purple-400 to-purple-600',
+                'from-violet-400 to-violet-600',
+                'from-indigo-400 to-indigo-600',
+                'from-blue-400 to-blue-600',
+                'from-teal-400 to-teal-600',
+                'from-emerald-400 to-emerald-600',
+            ];
+        @endphp
+        <div class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-3 sm:gap-5">
+            @forelse ($menuItems as $index => $item)
+                <div class="group cursor-pointer" wire:click="addToCart({{ $item->id }})">
+                    <div class="bg-gradient-to-br {{ $gradients[$index % count($gradients)] }} rounded-2xl p-3 sm:p-5 text-center shadow-lg hover:shadow-xl transform hover:scale-105 transition-all duration-200 relative overflow-hidden">
+                        <!-- Decorative circle -->
+                        <div class="absolute -top-4 -right-4 w-16 h-16 bg-white/10 rounded-full"></div>
+                        <div class="absolute -bottom-3 -left-3 w-12 h-12 bg-white/10 rounded-full"></div>
 
-            <!-- Menu Items -->
-            <div class="lg:w-3/4">
-                @if($selectedCategory)
-                    @php $currentCategory = $categories->find($selectedCategory) @endphp
-                    <div class="mb-4 sm:mb-6 px-1 lg:px-0">
-                        <h2 class="text-xl sm:text-2xl font-bold text-gray-900">{{ $currentCategory->name }}</h2>
-                        @if($currentCategory->description)
-                            <p class="text-gray-600 mt-1 text-sm sm:text-base">{{ $currentCategory->description }}</p>
-                        @endif
-                    </div>
-                @else
-                    <div class="mb-4 sm:mb-6 px-1 lg:px-0">
-                        <h2 class="text-xl sm:text-2xl font-bold text-gray-900">All Menu Items</h2>
-                        <p class="text-gray-600 mt-1 text-sm sm:text-base">Browse our complete menu</p>
-                    </div>
-                @endif
-
-                <!-- Mobile: Two columns, Desktop: Two columns -->
-                <div class="grid grid-cols-2 lg:grid-cols-2 gap-2.5 sm:gap-6">
-                    @forelse ($menuItems as $item)
-                        <div class="bg-white rounded-lg shadow-sm border overflow-hidden hover:shadow-md transition-shadow">
-                            @if($item->image)
-                                <img src="{{ $item->image }}" alt="{{ $item->name }}" class="w-full h-28 sm:h-48 object-cover">
-                            @else
-                                <div class="w-full h-28 sm:h-48 bg-gradient-to-br from-gray-100 to-gray-200 flex items-center justify-center">
-                                    <svg class="w-8 h-8 sm:w-16 sm:h-16 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"></path>
-                                    </svg>
-                                </div>
-                            @endif
-                            
-                            <div class="p-2.5 sm:p-6">
-                                <div class="flex justify-between items-start mb-1 sm:mb-2">
-                                    <h3 class="text-sm sm:text-lg font-semibold text-gray-900 flex-1 pr-1 sm:pr-2 line-clamp-1 sm:line-clamp-none">{{ $item->name }}</h3>
-                                    @if($item->is_featured)
-                                        <span class="hidden sm:inline-block bg-yellow-100 text-yellow-800 text-xs px-2 py-1 rounded-full font-medium flex-shrink-0">Featured</span>
-                                    @endif
-                                </div>
-                                
-                                <p class="text-gray-600 text-xs sm:text-sm mb-2 sm:mb-4 line-clamp-2">{{ $item->description }}</p>
-                                
-                                <!-- Mobile: Compact layout, Desktop: Side by side -->
-                                <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between mb-2 sm:mb-4 space-y-2 sm:space-y-0">
-                                    <div>
-                                        <span class="text-sm sm:text-2xl font-bold text-green-600">PKR {{ number_format($item->price, 0) }}</span>
-                                        <div class="text-[10px] sm:text-xs text-gray-500 mt-0.5 sm:mt-1">
-                                            <span>🕒 {{ $item->preparation_time }} min</span>
-                                        </div>
-                                    </div>
-                                    
-                                    <button wire:click="addToCart({{ $item->id }})" 
-                                        class="w-full sm:w-auto bg-blue-600 text-white px-3 sm:px-6 py-1.5 sm:py-2 rounded-lg hover:bg-blue-700 transition-colors font-medium text-xs sm:text-base">
-                                        Add to Cart
-                                    </button>
-                                </div>
-                                
-                                @if($item->ingredients && count($item->ingredients) > 0)
-                                    <div class="hidden sm:block text-xs text-gray-500">
-                                        <span class="font-medium">Ingredients:</span> {{ implode(', ', array_slice($item->ingredients, 0, 3)) }}
-                                        @if(count($item->ingredients) > 3)
-                                            <span>...</span>
-                                        @endif
-                                    </div>
-                                @endif
+                        @if($item->is_featured)
+                            <div class="absolute top-1.5 right-1.5 sm:top-2 sm:right-2">
+                                <span class="bg-yellow-400 text-yellow-900 text-[9px] sm:text-[10px] px-1.5 py-0.5 sm:px-2 sm:py-0.5 rounded-full font-bold">⭐</span>
                             </div>
+                        @endif
+
+                        <!-- Item Icon/Image -->
+                        @if($item->image)
+                            <img src="{{ $item->image }}" alt="{{ $item->name }}" class="w-14 h-14 sm:w-20 sm:h-20 mx-auto mb-2 sm:mb-3 rounded-xl object-cover ring-2 ring-white/30 shadow-lg">
+                        @else
+                            <div class="w-14 h-14 sm:w-20 sm:h-20 mx-auto mb-2 sm:mb-3 bg-white/20 rounded-xl flex items-center justify-center ring-2 ring-white/30">
+                                <span class="text-2xl sm:text-4xl">🍽️</span>
+                            </div>
+                        @endif
+
+                        <!-- Item Name -->
+                        <h3 class="text-white font-bold text-xs sm:text-sm leading-tight mb-1 sm:mb-2 line-clamp-2">{{ $item->name }}</h3>
+
+                        <!-- Price -->
+                        <div class="bg-white/20 backdrop-blur-sm rounded-lg px-2 py-1 sm:px-3 sm:py-1.5 inline-block mb-2 sm:mb-3">
+                            <span class="text-white font-bold text-xs sm:text-base">PKR {{ number_format($item->price, 0) }}</span>
                         </div>
-                    @empty
-                        <div class="col-span-full text-center py-8 sm:py-12">
-                            <div class="text-gray-400 text-4xl sm:text-6xl mb-4">🍽️</div>
-                            <h3 class="text-lg sm:text-xl font-semibold text-gray-900 mb-2">No items found</h3>
-                            <p class="text-gray-600 text-sm sm:text-base">Try selecting a different category</p>
+
+                        <!-- Prep Time -->
+                        <div class="text-white/80 text-[9px] sm:text-xs">
+                            🕒 {{ $item->preparation_time }} min
                         </div>
-                    @endforelse
+
+                        <!-- Add to Cart Button -->
+                        <button class="mt-2 sm:mt-3 w-full bg-white/25 hover:bg-white/40 backdrop-blur-sm text-white text-[10px] sm:text-xs font-bold px-2 py-1.5 sm:px-3 sm:py-2 rounded-xl transition-all duration-200">
+                            + Add to Cart
+                        </button>
+                    </div>
                 </div>
-            </div>
+            @empty
+                <div class="col-span-full text-center py-8 sm:py-12">
+                    <div class="text-gray-400 text-4xl sm:text-6xl mb-4">🍽️</div>
+                    <h3 class="text-lg sm:text-xl font-semibold text-gray-900 mb-2">No items available</h3>
+                    <p class="text-gray-600 text-sm sm:text-base">This restaurant hasn't added any menu items yet</p>
+                </div>
+            @endforelse
         </div>
     </div>
 

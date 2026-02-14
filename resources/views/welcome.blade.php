@@ -35,7 +35,7 @@
                     
                     <!-- Browse All Restaurants Button -->
                     <div class="text-center lg:text-left">
-                        <a href="#restaurants" class="inline-block bg-gradient-to-r from-yellow-400 to-orange-500 text-gray-900 px-8 py-4 rounded-2xl font-bold text-lg hover:from-yellow-500 hover:to-orange-600 transition-all duration-200 shadow-2xl hover:shadow-3xl transform hover:scale-105">
+                        <a href="#restaurants-quick" class="inline-block bg-gradient-to-r from-yellow-400 to-orange-500 text-gray-900 px-8 py-4 rounded-2xl font-bold text-lg hover:from-yellow-500 hover:to-orange-600 transition-all duration-200 shadow-2xl hover:shadow-3xl transform hover:scale-105">
                             🍽️ Browse All Restaurants
                         </a>
                     </div>
@@ -61,138 +61,27 @@
         </div>
     </section>
 
-    <!-- Categories Section -->
-    <section class="py-12 bg-gray-50">
+    <!-- Restaurants Quick Access Section -->
+    <section id="restaurants-quick" class="py-12 bg-gray-50">
         <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
             <h2 class="text-2xl font-bold text-gray-900 mb-8 text-center">What's on your mind?</h2>
             
             <div class="grid grid-cols-3 md:grid-cols-6 lg:grid-cols-8 gap-4">
-                @php
-                $categories = [
-                    ['name' => 'KABABJEES Restaurant', 'emoji' => '🍕', 'color' => 'from-red-400 to-red-600'],
-                    ['name' => 'KABABJEES Restaurant', 'emoji' => '🍕', 'color' => 'from-red-400 to-red-600'],
-                    ['name' => 'KABABJEES Restaurant', 'emoji' => '🍕', 'color' => 'from-red-400 to-red-600'],
-                    ['name' => 'KABABJEES Restaurant', 'emoji' => '🍕', 'color' => 'from-red-400 to-red-600'],
-                    ['name' => 'KABABJEES Restaurant', 'emoji' => '🍕', 'color' => 'from-red-400 to-red-600'],
-                    ['name' => 'KABABJEES Restaurant', 'emoji' => '🍕', 'color' => 'from-red-400 to-red-600'],
-                    ['name' => 'KABABJEES Restaurant', 'emoji' => '🍕', 'color' => 'from-red-400 to-red-600'],
-                    ['name' => 'KABABJEES Restaurant', 'emoji' => '🍕', 'color' => 'from-red-400 to-red-600'],
-                    ['name' => 'KABABJEES Restaurant', 'emoji' => '🍕', 'color' => 'from-red-400 to-red-600'],
-                    
-                ];
-                @endphp
-                
-                @foreach($categories as $category)
-                <div class="group cursor-pointer">
-                    <div class="bg-gradient-to-br {{ $category['color'] }} rounded-2xl p-4 text-center shadow-lg hover:shadow-xl transform hover:scale-105 transition-all duration-200">
-                        <div class="text-3xl mb-2">{{ $category['emoji'] }}</div>
-                        <div class="text-white font-semibold text-sm">{{ $category['name'] }}</div>
+                @foreach(\App\Models\Restaurant::where('is_active', true)->get() as $resto)
+                <a href="{{ route('menu', $resto->slug) }}" class="group cursor-pointer">
+                    <div class="bg-gradient-to-br from-red-400 to-red-600 rounded-2xl p-4 text-center shadow-lg hover:shadow-xl transform hover:scale-105 transition-all duration-200">
+                        @if($resto->image)
+                            <img src="{{ $resto->image }}" alt="{{ $resto->name }}" class="w-10 h-10 sm:w-12 sm:h-12 mx-auto mb-2 rounded-lg object-cover">
+                        @else
+                            <div class="w-10 h-10 sm:w-12 sm:h-12 mx-auto mb-2 bg-white/20 rounded-lg flex items-center justify-center">
+                                <span class="text-white text-xl font-bold">{{ substr($resto->name, 0, 1) }}</span>
+                            </div>
+                        @endif
+                        <div class="text-white font-semibold text-xs sm:text-sm leading-tight">{{ $resto->name }}</div>
                     </div>
-                </div>
+                </a>
                 @endforeach
             </div>
-        </div>
-    </section>
-
-    <!-- Restaurants Section -->
-    <section id="restaurants" class="py-16 bg-white">
-        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-            <div class="text-center mb-12">
-                <h2 class="text-4xl font-bold text-gray-900 mb-4">Our Restaurants</h2>
-                <p class="text-xl text-gray-600">Discover amazing dining experiences</p>
-            </div>
-
-            <div class="grid grid-cols-3 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
-                @forelse(\App\Models\Restaurant::where('is_active', true)->take(8)->get() as $restaurant)
-                    <div class="bg-white rounded-2xl shadow-lg hover:shadow-xl transition-all duration-300 overflow-hidden group border border-gray-100">
-                        <!-- Restaurant Image -->
-                        <div class="relative h-48 overflow-hidden">
-                            @if($restaurant->image)
-                                <img src="{{ $restaurant->image }}" alt="{{ $restaurant->name }}" 
-                                     class="w-full h-full object-cover group-hover:scale-110 transition-transform duration-300">
-                            @else
-                                <div class="w-full h-full bg-gradient-to-br from-red-400 via-pink-500 to-purple-600 flex items-center justify-center">
-                                    <span class="text-white text-4xl font-bold">{{ substr($restaurant->name, 0, 1) }}</span>
-                                </div>
-                            @endif
-                            
-                            <!-- Badges -->
-                            <div class="absolute top-3 left-3">
-                                <span class="bg-green-500 text-white px-2 py-1 rounded-full text-xs font-semibold">
-                                    ⚡ Fresh & Hot
-                                </span>
-                            </div>
-                            <div class="absolute top-3 right-3">
-                                <span class="bg-blue-500 text-white px-2 py-1 rounded-full text-xs font-semibold">
-                                    ⭐ Popular
-                                </span>
-                            </div>
-                            
-                            <!-- Favorite Button -->
-                            <button class="absolute bottom-3 right-3 w-10 h-10 bg-white rounded-full shadow-lg flex items-center justify-center hover:bg-red-50 transition-colors group">
-                                <svg class="w-5 h-5 text-gray-400 group-hover:text-red-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z"></path>
-                                </svg>
-                            </button>
-                        </div>
-                        
-                        <!-- Restaurant Info -->
-                        <div class="p-4">
-                            <div class="flex justify-between items-start mb-2">
-                                <h3 class="font-bold text-lg text-gray-900 truncate">{{ $restaurant->name }}</h3>
-                                <div class="flex items-center space-x-1 bg-green-100 px-2 py-1 rounded-lg">
-                                    <span class="text-green-600 text-sm font-semibold">4.3</span>
-                                    <svg class="w-3 h-3 text-green-600" fill="currentColor" viewBox="0 0 20 20">
-                                        <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z"></path>
-                                    </svg>
-                                </div>
-                            </div>
-                            
-                            <p class="text-gray-600 text-sm mb-3 line-clamp-2">{{ $restaurant->description ?: 'Delicious food, fresh ingredients' }}</p>
-                            
-                            <!-- Restaurant Details -->
-                            <div class="flex items-center justify-between text-sm text-gray-500 mb-4">
-                                <div class="flex items-center space-x-4">
-                                    <span class="flex items-center">
-                                        <svg class="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"></path>
-                                        </svg>
-                                        15-25 min
-                                    </span>
-                                    <span class="flex items-center">
-                                        <svg class="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z"></path>
-                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 11a3 3 0 11-6 0 3 3 0 016 0z"></path>
-                                        </svg>
-                                        Dine-in
-                                    </span>
-                                </div>
-                            </div>
-                            
-                            <!-- Order Button -->
-                            <a href="{{ route('menu', $restaurant->slug) }}" 
-                               class="block w-full bg-gradient-to-r from-red-500 to-pink-500 text-white text-center py-3 rounded-xl font-semibold hover:from-red-600 hover:to-pink-600 transition-all duration-200 shadow-lg hover:shadow-xl">
-                                Order Now
-                            </a>
-                        </div>
-                    </div>
-                @empty
-                    <div class="col-span-full text-center py-16">
-                        <div class="text-gray-400 text-8xl mb-6">🍽️</div>
-                        <h3 class="text-2xl font-bold text-gray-900 mb-4">No restaurants available</h3>
-                        <p class="text-gray-600 text-lg">We're working hard to bring you amazing restaurants!</p>
-                    </div>
-                @endforelse
-            </div>
-            
-            <!-- View All Restaurants Button -->
-            @if(\App\Models\Restaurant::where('is_active', true)->count() > 8)
-                <div class="text-center mt-12">
-                    <a href="#" class="inline-block bg-gradient-to-r from-pink-500 via-red-500 to-orange-500 text-white px-12 py-4 rounded-2xl font-bold text-lg hover:from-pink-600 hover:via-red-600 hover:to-orange-600 transition-all duration-200 shadow-2xl hover:shadow-3xl transform hover:scale-105">
-                        🏪 View All {{ \App\Models\Restaurant::where('is_active', true)->count() }} Restaurants
-                    </a>
-                </div>
-            @endif
         </div>
     </section>
 
@@ -243,7 +132,7 @@
         <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
             <h2 class="text-4xl font-bold mb-4">Hungry? You're in the right place</h2>
             <p class="text-xl text-gray-300 mb-8">Join thousands of happy customers enjoying fresh meals at our restaurants</p>
-            <a href="#restaurants" class="inline-block bg-gradient-to-r from-red-500 to-pink-500 text-white px-12 py-4 rounded-2xl font-bold text-lg hover:from-red-600 hover:to-pink-600 transition-all duration-200 shadow-2xl hover:shadow-3xl transform hover:scale-105">
+            <a href="#restaurants-quick" class="inline-block bg-gradient-to-r from-red-500 to-pink-500 text-white px-12 py-4 rounded-2xl font-bold text-lg hover:from-red-600 hover:to-pink-600 transition-all duration-200 shadow-2xl hover:shadow-3xl transform hover:scale-105">
                 Browse Restaurants
             </a>
         </div>

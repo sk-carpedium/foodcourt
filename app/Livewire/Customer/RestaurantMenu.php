@@ -3,14 +3,12 @@
 namespace App\Livewire\Customer;
 
 use App\Models\Restaurant;
-use App\Models\MenuCategory;
 use App\Models\MenuItem;
 use Livewire\Component;
 
 class RestaurantMenu extends Component
 {
     public $restaurant;
-    public $selectedCategory = null;
     public $cart = [];
     public $showCart = false;
 
@@ -31,40 +29,16 @@ class RestaurantMenu extends Component
         // Get active menus for this restaurant
         $menus = $this->restaurant->menus()->where('is_active', true)->get();
         
-        // Get categories from all active menus
-        $categories = MenuCategory::whereIn('menu_id', $menus->pluck('id'))
-            ->where('is_active', true)
-            ->with(['activeMenuItems' => function($query) {
-                $query->orderBy('sort_order');
-            }])
+        // Get all available items from active menus
+        $menuItems = MenuItem::whereIn('menu_id', $menus->pluck('id'))
+            ->where('is_available', true)
             ->orderBy('sort_order')
             ->get();
 
-        $menuItems = collect();
-        if ($this->selectedCategory) {
-            $menuItems = MenuItem::where('menu_category_id', $this->selectedCategory)
-                ->where('is_available', true)
-                ->orderBy('sort_order')
-                ->get();
-        } else {
-            // Get all items from active menus
-            $menuItems = MenuItem::whereIn('menu_id', $menus->pluck('id'))
-                ->where('is_available', true)
-                ->orderBy('sort_order')
-                ->get();
-        }
-
         return view('livewire.customer.restaurant-menu', [
-            'categories' => $categories,
             'menuItems' => $menuItems,
             'cartTotal' => $this->getCartTotal(),
-            'menus' => $menus
         ]);
-    }
-
-    public function selectCategory($categoryId = null)
-    {
-        $this->selectedCategory = $categoryId;
     }
 
     public function addToCart($itemId)

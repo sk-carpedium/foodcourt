@@ -11,14 +11,12 @@ use Livewire\Component;
 class RestaurantMenuManager extends Component
 {
     public $selectedRestaurant = null;
-    public $selectedMenu = null;
-    public $selectedCategory = null;
-    public $activeLevel = 'restaurants'; // restaurants, menus, categories, items
+    public $activeLevel = 'restaurants'; // restaurants, items
     
     // Forms
     public $showForm = false;
     public $editingId = null;
-    public $formType = ''; // restaurant, menu, category, item
+    public $formType = ''; // restaurant, item
     
     // Restaurant form
     public $restaurant_name = '';
@@ -27,17 +25,6 @@ class RestaurantMenuManager extends Component
     public $restaurant_email = '';
     public $restaurant_address = '';
     public $restaurant_is_active = true;
-    
-    // Menu form
-    public $menu_name = '';
-    public $menu_description = '';
-    public $menu_is_active = true;
-    
-    // Category form
-    public $category_name = '';
-    public $category_description = '';
-    public $category_sort_order = 0;
-    public $category_is_active = true;
     
     // Item form
     public $item_name = '';
@@ -55,15 +42,6 @@ class RestaurantMenuManager extends Component
         'restaurant_email' => 'nullable|email',
         'restaurant_address' => 'nullable|string',
         'restaurant_is_active' => 'boolean',
-        
-        'menu_name' => 'required|string|max:255',
-        'menu_description' => 'nullable|string',
-        'menu_is_active' => 'boolean',
-        
-        'category_name' => 'required|string|max:255',
-        'category_description' => 'nullable|string',
-        'category_sort_order' => 'integer|min:0',
-        'category_is_active' => 'boolean',
         
         'item_name' => 'required|string|max:255',
         'item_description' => 'nullable|string',
@@ -83,43 +61,24 @@ class RestaurantMenuManager extends Component
 
     public function render()
     {
-        $restaurants = Restaurant::withCount(['menus', 'menuCategories', 'menuItems'])->get();
-        $menus = $this->selectedRestaurant ? 
-            Menu::where('restaurant_id', $this->selectedRestaurant)->withCount(['menuCategories', 'menuItems'])->get() : 
-            collect();
-        $categories = $this->selectedMenu ? 
-            MenuCategory::where('menu_id', $this->selectedMenu)->withCount('menuItems')->get() : 
-            collect();
-        $items = $this->selectedCategory ? 
-            MenuItem::where('menu_category_id', $this->selectedCategory)->get() : 
+        $restaurants = Restaurant::withCount('menuItems')->get();
+        
+        $items = $this->selectedRestaurant ? 
+            MenuItem::where('restaurant_id', $this->selectedRestaurant)
+                ->orderBy('sort_order')
+                ->orderBy('name')
+                ->get() : 
             collect();
 
         return view('livewire.admin.restaurant-menu-manager', [
             'restaurants' => $restaurants,
-            'menus' => $menus,
-            'categories' => $categories,
-            'items' => $items
+            'items' => $items,
         ]);
     }
 
     public function selectRestaurant($restaurantId)
     {
         $this->selectedRestaurant = $restaurantId;
-        $this->selectedMenu = null;
-        $this->selectedCategory = null;
-        $this->activeLevel = 'menus';
-    }
-
-    public function selectMenu($menuId)
-    {
-        $this->selectedMenu = $menuId;
-        $this->selectedCategory = null;
-        $this->activeLevel = 'categories';
-    }
-
-    public function selectCategory($categoryId)
-    {
-        $this->selectedCategory = $categoryId;
         $this->activeLevel = 'items';
     }
 
@@ -128,14 +87,30 @@ class RestaurantMenuManager extends Component
         $this->activeLevel = $level;
         if ($level === 'restaurants') {
             $this->selectedRestaurant = null;
-            $this->selectedMenu = null;
-            $this->selectedCategory = null;
-        } elseif ($level === 'menus') {
-            $this->selectedMenu = null;
-            $this->selectedCategory = null;
-        } elseif ($level === 'categories') {
-            $this->selectedCategory = null;
         }
+    }
+
+    /**
+     * Get or create a default menu and category for the restaurant.
+     * This keeps the DB structure intact while simplifying the admin UI.
+     */
+    private function getDefaultMenuAndCategory($restaurantId)
+    {
+        $restaurant = Restaurant::findOrFail($restaurantId);
+        
+        // Get or create default menu
+        $menu = Menu::firstOrCreate(
+            ['restaurant_id' => $restaurantId, 'name' => 'Default Menu'],
+            ['description' => 'Main menu', 'is_active' => true]
+        );
+        
+        // Get or create default category
+        $category = MenuCategory::firstOrCreate(
+            ['menu_id' => $menu->id, 'name' => 'General'],
+            ['restaurant_id' => $restaurantId, 'description' => 'General items', 'is_active' => true, 'sort_order' => 0]
+        );
+
+        return [$menu, $category];
     }
 
     // Restaurant CRUD
@@ -187,7 +162,9 @@ class RestaurantMenuManager extends Component
             Restaurant::findOrFail($this->editingId)->update($data);
             session()->flash('message', 'Restaurant updated successfully!');
         } else {
-            Restaurant::create($data);
+            $restaurant = Restaurant::create($data);
+            // Auto-create default menu & category
+            $this->getDefaultMenuAndCategory($restaurant->id);
             session()->flash('message', 'Restaurant created successfully!');
         }
 
@@ -201,135 +178,11 @@ class RestaurantMenuManager extends Component
         session()->flash('message', 'Restaurant deleted successfully!');
     }
 
-    // Menu CRUD
-    public function createMenu()
-    {
-        if (!$this->selectedRestaurant) {
-            session()->flash('error', 'Please select a restaurant first.');
-            return;
-        }
-        
-        $this->authorize('create menu categories');
-        $this->resetForms();
-        $this->formType = 'menu';
-        $this->showForm = true;
-    }
-
-    public function editMenu($id)
-    {
-        $this->authorize('edit menu categories');
-        $menu = Menu::findOrFail($id);
-        
-        $this->editingId = $id;
-        $this->formType = 'menu';
-        $this->menu_name = $menu->name;
-        $this->menu_description = $menu->description;
-        $this->menu_is_active = $menu->is_active;
-        $this->showForm = true;
-    }
-
-    public function saveMenu()
-    {
-        $this->validate([
-            'menu_name' => 'required|string|max:255',
-            'menu_description' => 'nullable|string',
-            'menu_is_active' => 'boolean',
-        ]);
-
-        $data = [
-            'restaurant_id' => $this->selectedRestaurant,
-            'name' => $this->menu_name,
-            'description' => $this->menu_description,
-            'is_active' => $this->menu_is_active,
-        ];
-
-        if ($this->editingId) {
-            Menu::findOrFail($this->editingId)->update($data);
-            session()->flash('message', 'Menu updated successfully!');
-        } else {
-            Menu::create($data);
-            session()->flash('message', 'Menu created successfully!');
-        }
-
-        $this->resetForms();
-    }
-
-    public function deleteMenu($id)
-    {
-        $this->authorize('delete menu categories');
-        Menu::findOrFail($id)->delete();
-        session()->flash('message', 'Menu deleted successfully!');
-    }
-
-    // Category CRUD
-    public function createCategory()
-    {
-        if (!$this->selectedMenu) {
-            session()->flash('error', 'Please select a menu first.');
-            return;
-        }
-        
-        $this->authorize('create menu categories');
-        $this->resetForms();
-        $this->formType = 'category';
-        $this->showForm = true;
-    }
-
-    public function editCategory($id)
-    {
-        $this->authorize('edit menu categories');
-        $category = MenuCategory::findOrFail($id);
-        
-        $this->editingId = $id;
-        $this->formType = 'category';
-        $this->category_name = $category->name;
-        $this->category_description = $category->description;
-        $this->category_sort_order = $category->sort_order;
-        $this->category_is_active = $category->is_active;
-        $this->showForm = true;
-    }
-
-    public function saveCategory()
-    {
-        $this->validate([
-            'category_name' => 'required|string|max:255',
-            'category_description' => 'nullable|string',
-            'category_sort_order' => 'integer|min:0',
-            'category_is_active' => 'boolean',
-        ]);
-
-        $data = [
-            'restaurant_id' => $this->selectedRestaurant,
-            'menu_id' => $this->selectedMenu,
-            'name' => $this->category_name,
-            'description' => $this->category_description,
-            'sort_order' => $this->category_sort_order,
-            'is_active' => $this->category_is_active,
-        ];
-
-        if ($this->editingId) {
-            MenuCategory::findOrFail($this->editingId)->update($data);
-            session()->flash('message', 'Category updated successfully!');
-        } else {
-            MenuCategory::create($data);
-            session()->flash('message', 'Category created successfully!');
-        }
-
-        $this->resetForms();
-    }
-
-    public function deleteCategory($id)
-    {
-        $this->authorize('delete menu categories');
-        MenuCategory::findOrFail($id)->delete();
-        session()->flash('message', 'Category deleted successfully!');
-    }
-
     // Item CRUD
     public function createItem()
     {
-        if (!$this->selectedCategory) {
-            session()->flash('error', 'Please select a category first.');
+        if (!$this->selectedRestaurant) {
+            session()->flash('error', 'Please select a restaurant first.');
             return;
         }
         
@@ -368,10 +221,12 @@ class RestaurantMenuManager extends Component
             'item_sort_order' => 'integer|min:0',
         ]);
 
+        [$menu, $category] = $this->getDefaultMenuAndCategory($this->selectedRestaurant);
+
         $data = [
             'restaurant_id' => $this->selectedRestaurant,
-            'menu_id' => $this->selectedMenu,
-            'menu_category_id' => $this->selectedCategory,
+            'menu_id' => $menu->id,
+            'menu_category_id' => $category->id,
             'name' => $this->item_name,
             'description' => $this->item_description,
             'price' => $this->item_price,
@@ -412,17 +267,6 @@ class RestaurantMenuManager extends Component
         $this->restaurant_email = '';
         $this->restaurant_address = '';
         $this->restaurant_is_active = true;
-        
-        // Menu form
-        $this->menu_name = '';
-        $this->menu_description = '';
-        $this->menu_is_active = true;
-        
-        // Category form
-        $this->category_name = '';
-        $this->category_description = '';
-        $this->category_sort_order = 0;
-        $this->category_is_active = true;
         
         // Item form
         $this->item_name = '';
