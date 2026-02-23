@@ -87,7 +87,6 @@ class OrderManager extends Component
             'paymentMethodOptions' => [
                 'cash' => 'Cash',
                 'card' => 'Card',
-                'bank_transfer' => 'Bank Transfer',
             ]
         ]);
     }

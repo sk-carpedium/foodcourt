@@ -98,16 +98,6 @@
                                     </div>
                                 </label>
 
-                                <label class="relative">
-                                    <input type="radio" wire:model="payment_method" value="bank_transfer" class="sr-only peer">
-                                    <div class="flex items-center justify-center p-4 border-2 border-gray-200 rounded-lg cursor-pointer peer-checked:border-blue-500 peer-checked:bg-blue-50 hover:border-gray-300 transition-colors">
-                                        <div class="text-center">
-                                            <div class="text-2xl mb-1">🏦</div>
-                                            <div class="font-medium text-gray-900">Bank Transfer</div>
-                                            <div class="text-xs text-gray-500">Online banking</div>
-                                        </div>
-                                    </div>
-                                </label>
                             </div>
                             @error('payment_method') <span class="text-red-500 text-sm">{{ $message }}</span> @enderror
                         </div>
@@ -190,7 +180,6 @@
                                     <span class="capitalize">
                                         @if($payment_method === 'cash') 💵 Cash
                                         @elseif($payment_method === 'card') 💳 Card
-                                        @elseif($payment_method === 'bank_transfer') 🏦 Bank Transfer
                                         @endif
                                     </span>
                                 </div>

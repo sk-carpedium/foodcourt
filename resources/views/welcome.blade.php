@@ -61,23 +61,45 @@
         </div>
     </section>
 
-    <!-- Restaurants Quick Access Section -->
-    <section id="restaurants-quick" class="py-12 bg-gray-50">
+    <!-- Restaurants Section -->
+    <section id="restaurants-quick" class="py-10 sm:py-14 bg-gray-50">
         <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-            <h2 class="text-2xl font-bold text-gray-900 mb-8 text-center">What's on your mind?</h2>
+            <div class="text-center mb-8 sm:mb-10">
+                <h2 class="text-2xl sm:text-3xl font-bold text-gray-900">Our Restaurants</h2>
+                <p class="text-gray-500 mt-2 text-sm sm:text-base">Pick a restaurant and start ordering</p>
+            </div>
             
-            <div class="grid grid-cols-3 md:grid-cols-6 lg:grid-cols-8 gap-4">
+            <div class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-3 sm:gap-5">
                 @foreach(\App\Models\Restaurant::where('is_active', true)->get() as $resto)
-                <a href="{{ route('menu', $resto->slug) }}" class="group cursor-pointer">
-                    <div class="bg-gradient-to-br from-red-400 to-red-600 rounded-2xl p-4 text-center shadow-lg hover:shadow-xl transform hover:scale-105 transition-all duration-200">
+                <a href="{{ route('menu', $resto->slug) }}" class="group">
+                    <div class="bg-white rounded-xl overflow-hidden border border-gray-200 hover:border-gray-300 hover:shadow-lg transition-all duration-200">
+                        <!-- Logo -->
                         @if($resto->image)
-                            <img src="{{ $resto->image }}" alt="{{ $resto->name }}" class="w-10 h-10 sm:w-12 sm:h-12 mx-auto mb-2 rounded-lg object-cover">
+                            <div class="p-4 sm:p-5 flex items-center justify-center bg-gray-50">
+                                <img src="{{ asset('storage/' . $resto->image) }}" alt="{{ $resto->name }}" class="max-h-24 sm:max-h-32 w-auto object-contain group-hover:scale-105 transition-transform duration-300">
+                            </div>
                         @else
-                            <div class="w-10 h-10 sm:w-12 sm:h-12 mx-auto mb-2 bg-white/20 rounded-lg flex items-center justify-center">
-                                <span class="text-white text-xl font-bold">{{ substr($resto->name, 0, 1) }}</span>
+                            <div class="p-4 sm:p-5 flex items-center justify-center bg-gray-50">
+                                <span class="text-4xl sm:text-5xl font-bold text-gray-300">{{ substr($resto->name, 0, 1) }}</span>
                             </div>
                         @endif
-                        <div class="text-white font-semibold text-xs sm:text-sm leading-tight">{{ $resto->name }}</div>
+
+                        <!-- Info -->
+                        <div class="p-3 sm:p-4 border-t">
+                            <h3 class="font-bold text-gray-900 text-sm sm:text-base truncate group-hover:text-red-500 transition-colors">{{ $resto->name }}</h3>
+                            @if($resto->description)
+                                <p class="text-gray-500 text-xs sm:text-sm mt-1 line-clamp-1">{{ $resto->description }}</p>
+                            @endif
+                            <div class="flex items-center justify-between mt-2 sm:mt-3">
+                                <div class="flex items-center gap-1 text-xs text-gray-400">
+                                    <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                                    </svg>
+                                    <span>15-25 min</span>
+                                </div>
+                                <span class="text-xs font-medium text-red-500 group-hover:text-red-600">Order →</span>
+                            </div>
+                        </div>
                     </div>
                 </a>
                 @endforeach

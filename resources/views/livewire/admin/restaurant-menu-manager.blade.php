@@ -89,9 +89,13 @@
                              wire:click="selectRestaurant({{ $restaurant->id }})">
                             <div class="flex justify-between items-start mb-4">
                                 <div class="flex items-center">
-                                    <div class="w-12 h-12 bg-gradient-to-br from-blue-500 to-blue-600 rounded-xl flex items-center justify-center text-white text-xl mr-3">
-                                        🏪
-                                    </div>
+                                    @if($restaurant->image)
+                                        <img src="{{ $restaurant->image }}" alt="{{ $restaurant->name }}" class="w-12 h-12 rounded-xl object-cover mr-3 ring-2 ring-blue-200">
+                                    @else
+                                        <div class="w-12 h-12 bg-gradient-to-br from-blue-500 to-blue-600 rounded-xl flex items-center justify-center text-white text-xl mr-3">
+                                            🏪
+                                        </div>
+                                    @endif
                                     <div>
                                         <h3 class="font-bold text-slate-900 group-hover:text-blue-600 transition-colors">{{ $restaurant->name }}</h3>
                                         <span class="inline-flex items-center px-3 py-1 text-xs font-medium rounded-full {{ $restaurant->is_active ? 'bg-emerald-100 text-emerald-800' : 'bg-red-100 text-red-800' }}">
@@ -153,9 +157,13 @@
                             <div class="flex flex-col sm:flex-row sm:justify-between sm:items-start gap-4">
                                 <div class="flex-1">
                                     <div class="flex items-center space-x-3 mb-3">
-                                        <div class="w-10 h-10 bg-gradient-to-br from-orange-500 to-amber-600 rounded-lg flex items-center justify-center text-white text-lg flex-shrink-0">
-                                            🍽️
-                                        </div>
+                                        @if($item->image)
+                                            <img src="{{ $item->image }}" alt="{{ $item->name }}" class="w-10 h-10 rounded-lg object-cover ring-2 ring-orange-200 flex-shrink-0">
+                                        @else
+                                            <div class="w-10 h-10 bg-gradient-to-br from-orange-500 to-amber-600 rounded-lg flex items-center justify-center text-white text-lg flex-shrink-0">
+                                                🍽️
+                                            </div>
+                                        @endif
                                         <div>
                                             <h3 class="font-bold text-slate-900 group-hover:text-orange-600 transition-colors">{{ $item->name }}</h3>
                                             <div class="flex items-center space-x-2 mt-1 flex-wrap">
@@ -234,6 +242,36 @@
                     <!-- Restaurant Form -->
                     @if($formType === 'restaurant')
                         <form wire:submit.prevent="saveRestaurant" class="space-y-6">
+                            <div wire:key="restaurant-image-upload">
+                                <label class="block text-sm font-semibold text-slate-700 mb-2">Restaurant Image</label>
+                                <div class="flex items-center gap-4">
+                                    <div class="relative">
+                                        @if($restaurant_image)
+                                            <img src="{{ $restaurant_image->temporaryUrl() }}" class="w-20 h-20 rounded-xl object-cover border-2 border-blue-300 shadow">
+                                        @elseif($existing_restaurant_image)
+                                            <img src="{{ $existing_restaurant_image }}" class="w-20 h-20 rounded-xl object-cover border-2 border-slate-200 shadow">
+                                        @else
+                                            <div class="w-20 h-20 rounded-xl bg-slate-100 border-2 border-dashed border-slate-300 flex items-center justify-center">
+                                                <svg class="w-8 h-8 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"></path>
+                                                </svg>
+                                            </div>
+                                        @endif
+                                        <div wire:loading wire:target="restaurant_image" class="absolute inset-0 bg-white/80 rounded-xl flex items-center justify-center">
+                                            <svg class="animate-spin w-6 h-6 text-blue-500" fill="none" viewBox="0 0 24 24">
+                                                <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                                                <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"></path>
+                                            </svg>
+                                        </div>
+                                    </div>
+                                    <div class="flex-1">
+                                        <input type="file" wire:model="restaurant_image" accept="image/jpeg,image/png,image/jpg,image/webp" class="w-full text-sm text-slate-500 file:mr-4 file:py-2 file:px-4 file:rounded-lg file:border-0 file:text-sm file:font-semibold file:bg-blue-50 file:text-blue-600 hover:file:bg-blue-100">
+                                        <div wire:loading wire:target="restaurant_image" class="text-xs text-blue-500 mt-1 font-medium">Uploading...</div>
+                                        <p wire:loading.remove wire:target="restaurant_image" class="text-xs text-slate-500 mt-1">JPG, PNG, WebP up to 2MB</p>
+                                        @error('restaurant_image') <span class="text-red-500 text-sm mt-1 block">{{ $message }}</span> @enderror
+                                    </div>
+                                </div>
+                            </div>
                             <div>
                                 <label class="block text-sm font-semibold text-slate-700 mb-2">Restaurant Name *</label>
                                 <input type="text" wire:model="restaurant_name" class="w-full px-4 py-3 border border-slate-300 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors bg-slate-50 focus:bg-white text-slate-900">
@@ -262,8 +300,9 @@
                                 <label class="ml-3 text-sm font-medium text-slate-700">Restaurant is active and accepting orders</label>
                             </div>
                             <div class="flex space-x-4 pt-6">
-                                <button type="submit" class="flex-1 bg-gradient-to-r from-blue-500 to-blue-600 text-white py-3 rounded-xl hover:from-blue-600 hover:to-blue-700 transition-all font-semibold shadow-lg shadow-blue-500/25">
-                                    {{ $editingId ? 'Update Restaurant' : 'Create Restaurant' }}
+                                <button type="submit" wire:loading.attr="disabled" wire:target="restaurant_image,saveRestaurant" class="flex-1 bg-gradient-to-r from-blue-500 to-blue-600 text-white py-3 rounded-xl hover:from-blue-600 hover:to-blue-700 transition-all font-semibold shadow-lg shadow-blue-500/25 disabled:opacity-50 disabled:cursor-not-allowed">
+                                    <span wire:loading.remove wire:target="saveRestaurant">{{ $editingId ? 'Update Restaurant' : 'Create Restaurant' }}</span>
+                                    <span wire:loading wire:target="saveRestaurant">Saving...</span>
                                 </button>
                                 <button type="button" wire:click="cancelForm" class="flex-1 bg-slate-500 text-white py-3 rounded-xl hover:bg-slate-600 transition-colors font-semibold">
                                     Cancel
@@ -275,6 +314,36 @@
                     <!-- Item Form -->
                     @if($formType === 'item')
                         <form wire:submit.prevent="saveItem" class="space-y-6">
+                            <div wire:key="item-image-upload">
+                                <label class="block text-sm font-semibold text-slate-700 mb-2">Item Image</label>
+                                <div class="flex items-center gap-4">
+                                    <div class="relative">
+                                        @if($item_image)
+                                            <img src="{{ $item_image->temporaryUrl() }}" class="w-20 h-20 rounded-xl object-cover border-2 border-orange-300 shadow">
+                                        @elseif($existing_item_image)
+                                            <img src="{{ $existing_item_image }}" class="w-20 h-20 rounded-xl object-cover border-2 border-slate-200 shadow">
+                                        @else
+                                            <div class="w-20 h-20 rounded-xl bg-slate-100 border-2 border-dashed border-slate-300 flex items-center justify-center">
+                                                <svg class="w-8 h-8 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"></path>
+                                                </svg>
+                                            </div>
+                                        @endif
+                                        <div wire:loading wire:target="item_image" class="absolute inset-0 bg-white/80 rounded-xl flex items-center justify-center">
+                                            <svg class="animate-spin w-6 h-6 text-orange-500" fill="none" viewBox="0 0 24 24">
+                                                <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                                                <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"></path>
+                                            </svg>
+                                        </div>
+                                    </div>
+                                    <div class="flex-1">
+                                        <input type="file" wire:model="item_image" accept="image/jpeg,image/png,image/jpg,image/webp" class="w-full text-sm text-slate-500 file:mr-4 file:py-2 file:px-4 file:rounded-lg file:border-0 file:text-sm file:font-semibold file:bg-orange-50 file:text-orange-600 hover:file:bg-orange-100">
+                                        <div wire:loading wire:target="item_image" class="text-xs text-orange-500 mt-1 font-medium">Uploading...</div>
+                                        <p wire:loading.remove wire:target="item_image" class="text-xs text-slate-500 mt-1">JPG, PNG, WebP up to 2MB</p>
+                                        @error('item_image') <span class="text-red-500 text-sm mt-1 block">{{ $message }}</span> @enderror
+                                    </div>
+                                </div>
+                            </div>
                             <div>
                                 <label class="block text-sm font-semibold text-slate-700 mb-2">Item Name *</label>
                                 <input type="text" wire:model="item_name" class="w-full px-4 py-3 border border-slate-300 rounded-xl focus:ring-2 focus:ring-orange-500 focus:border-orange-500 transition-colors bg-slate-50 focus:bg-white text-slate-900">
@@ -311,8 +380,9 @@
                                 </div>
                             </div>
                             <div class="flex space-x-4 pt-6">
-                                <button type="submit" class="flex-1 bg-gradient-to-r from-orange-500 to-amber-600 text-white py-3 rounded-xl hover:from-orange-600 hover:to-amber-700 transition-all font-semibold shadow-lg shadow-orange-500/25">
-                                    {{ $editingId ? 'Update Item' : 'Create Item' }}
+                                <button type="submit" wire:loading.attr="disabled" wire:target="item_image,saveItem" class="flex-1 bg-gradient-to-r from-orange-500 to-amber-600 text-white py-3 rounded-xl hover:from-orange-600 hover:to-amber-700 transition-all font-semibold shadow-lg shadow-orange-500/25 disabled:opacity-50 disabled:cursor-not-allowed">
+                                    <span wire:loading.remove wire:target="saveItem">{{ $editingId ? 'Update Item' : 'Create Item' }}</span>
+                                    <span wire:loading wire:target="saveItem">Saving...</span>
                                 </button>
                                 <button type="button" wire:click="cancelForm" class="flex-1 bg-slate-500 text-white py-3 rounded-xl hover:bg-slate-600 transition-colors font-semibold">
                                     Cancel

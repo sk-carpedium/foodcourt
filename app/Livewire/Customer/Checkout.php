@@ -26,7 +26,7 @@ class Checkout extends Component
         'customer_phone' => 'nullable|string|max:20',
         'customer_email' => 'nullable|email|max:255',
         'order_type' => 'required|in:dine_in,takeaway,delivery',
-        'payment_method' => 'required|in:cash,card,bank_transfer',
+        'payment_method' => 'required|in:cash,card',
         'table_number' => 'required_if:order_type,dine_in|nullable|string|max:10',
         'delivery_address' => 'required_if:order_type,delivery|nullable|string',
         'notes' => 'nullable|string|max:500',
@@ -103,6 +103,7 @@ class Checkout extends Component
                 'item_price' => $menuItem->price,
                 'quantity' => $cartItem['quantity'],
                 'total_price' => $menuItem->price * $cartItem['quantity'],
+                'status' => 'pending',
             ]);
         }
 

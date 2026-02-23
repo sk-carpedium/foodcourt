@@ -346,7 +346,6 @@
                             <div class="text-sm text-gray-900 font-semibold">
                                 @if($order->payment_method === 'cash') 💵 Cash
                                 @elseif($order->payment_method === 'card') 💳 Card
-                                @elseif($order->payment_method === 'bank_transfer') 🏦 Bank Transfer
                                 @endif
                             </div>
                             <span class="px-3 py-1 text-xs font-bold rounded-full
@@ -532,7 +531,6 @@
                                 <div class="text-sm text-gray-900 font-semibold">
                                     @if($order->payment_method === 'cash') 💵 Cash
                                     @elseif($order->payment_method === 'card') 💳 Card
-                                    @elseif($order->payment_method === 'bank_transfer') 🏦 Bank Transfer
                                     @endif
                                 </div>
                                 <span class="px-3 py-1 text-xs font-bold rounded-full

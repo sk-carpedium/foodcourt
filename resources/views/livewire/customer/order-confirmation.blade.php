@@ -45,7 +45,6 @@
                         <span class="font-semibold">
                             @if($order->payment_method === 'cash') 💵 Cash
                             @elseif($order->payment_method === 'card') 💳 Card
-                            @elseif($order->payment_method === 'bank_transfer') 🏦 Bank Transfer
                             @endif
                         </span>
                     </div>

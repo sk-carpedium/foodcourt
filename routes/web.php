@@ -59,6 +59,7 @@ Route::middleware(['auth'])->group(function () {
         Route::get('restaurant-menu-manager', \App\Livewire\Admin\RestaurantMenuManager::class)->name('admin.restaurant-menu-manager');
         Route::get('orders', \App\Livewire\Admin\OrderManager::class)->name('admin.orders');
         Route::get('invoices', \App\Livewire\Admin\InvoiceManager::class)->name('admin.invoices');
+        Route::get('kitchen-sales', \App\Livewire\Admin\KitchenDailySales::class)->name('admin.kitchen-sales');
         Route::get('invoice/{orderId}/print', function($orderId) {
             $order = \App\Models\Order::with(['orderItems.menuItem', 'restaurant'])->findOrFail($orderId);
             return view('pages.invoice-print', compact('order'));
@@ -79,5 +80,10 @@ Route::middleware(['auth'])->group(function () {
     // Kitchen Routes
     Route::middleware(['role:kitchen|admin|super-admin'])->prefix('kitchen')->group(function () {
         Route::get('orders', OrderQueue::class)->name('kitchen.orders');
+    });
+
+    // Cashier Routes
+    Route::middleware(['role:cashier|admin|super-admin'])->prefix('cashier')->group(function () {
+        Route::get('invoices', \App\Livewire\Cashier\InvoiceViewer::class)->name('cashier.invoices');
     });
 });

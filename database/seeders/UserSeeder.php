@@ -54,6 +54,27 @@ class UserSeeder extends Seeder
         );
         $waiter->assignRole('waiter');
 
+        // Create Cashier Users (2 shifts)
+        $cashier1 = User::firstOrCreate(
+            ['email' => 'cashier1@admin.com'],
+            [
+                'name' => 'Cashier - Morning Shift',
+                'password' => Hash::make('password'),
+                'email_verified_at' => now(),
+            ]
+        );
+        $cashier1->assignRole('cashier');
+
+        $cashier2 = User::firstOrCreate(
+            ['email' => 'cashier2@admin.com'],
+            [
+                'name' => 'Cashier - Evening Shift',
+                'password' => Hash::make('password'),
+                'email_verified_at' => now(),
+            ]
+        );
+        $cashier2->assignRole('cashier');
+
         // Create Customer User
         $customer = User::firstOrCreate(
             ['email' => 'customer@admin.com'],
@@ -70,6 +91,8 @@ class UserSeeder extends Seeder
         echo "- Admin: admin@admin.com (password: password)\n";
         echo "- Kitchen: kitchen@admin.com (password: password)\n";
         echo "- Waiter: waiter@admin.com (password: password)\n";
+        echo "- Cashier 1 (Morning): cashier1@admin.com (password: password)\n";
+        echo "- Cashier 2 (Evening): cashier2@admin.com (password: password)\n";
         echo "- Customer: customer@admin.com (password: password)\n";
     }
 }

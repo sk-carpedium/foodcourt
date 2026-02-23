@@ -18,6 +18,7 @@
             </div>
         </flux:navlist.item>
         <flux:navlist.item icon="document-text" :href="route('admin.invoices')" :current="request()->routeIs('admin.invoices')" wire:navigate>{{ __('Invoices') }}</flux:navlist.item>
+        <flux:navlist.item icon="currency-dollar" :href="route('admin.kitchen-sales')" :current="request()->routeIs('admin.kitchen-sales')" wire:navigate>{{ __('Kitchen Daily Sales') }}</flux:navlist.item>
     </flux:navlist.group>
     @endcan
 
@@ -48,6 +49,12 @@
                 @endif
             </div>
         </flux:navlist.item>
+    </flux:navlist.group>
+    @endcan
+
+    @can('view invoices')
+    <flux:navlist.group :heading="__('Cashier Portal')" class="grid">
+        <flux:navlist.item icon="document-text" :href="route('cashier.invoices')" :current="request()->routeIs('cashier.invoices')" wire:navigate>{{ __('Invoices') }}</flux:navlist.item>
     </flux:navlist.group>
     @endcan
 

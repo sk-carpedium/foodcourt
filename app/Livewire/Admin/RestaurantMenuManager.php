@@ -7,9 +7,12 @@ use App\Models\Menu;
 use App\Models\MenuCategory;
 use App\Models\MenuItem;
 use Livewire\Component;
+use Livewire\WithFileUploads;
 
 class RestaurantMenuManager extends Component
 {
+    use WithFileUploads;
+
     public $selectedRestaurant = null;
     public $activeLevel = 'restaurants'; // restaurants, items
     
@@ -25,6 +28,8 @@ class RestaurantMenuManager extends Component
     public $restaurant_email = '';
     public $restaurant_address = '';
     public $restaurant_is_active = true;
+    public $restaurant_image;
+    public $existing_restaurant_image = null;
     
     // Item form
     public $item_name = '';
@@ -34,6 +39,8 @@ class RestaurantMenuManager extends Component
     public $item_is_available = true;
     public $item_is_featured = false;
     public $item_sort_order = 0;
+    public $item_image;
+    public $existing_item_image = null;
 
     protected $rules = [
         'restaurant_name' => 'required|string|max:255',
@@ -135,6 +142,7 @@ class RestaurantMenuManager extends Component
         $this->restaurant_email = $restaurant->email;
         $this->restaurant_address = $restaurant->address;
         $this->restaurant_is_active = $restaurant->is_active;
+        $this->existing_restaurant_image = $restaurant->image;
         $this->showForm = true;
     }
 
@@ -147,6 +155,7 @@ class RestaurantMenuManager extends Component
             'restaurant_email' => 'nullable|email',
             'restaurant_address' => 'nullable|string',
             'restaurant_is_active' => 'boolean',
+            'restaurant_image' => 'nullable|image|max:2048',
         ]);
 
         $data = [
@@ -158,12 +167,16 @@ class RestaurantMenuManager extends Component
             'is_active' => $this->restaurant_is_active,
         ];
 
+        if ($this->restaurant_image) {
+            $path = $this->restaurant_image->store('restaurants', 'public');
+            $data['image'] = '/storage/' . $path;
+        }
+
         if ($this->editingId) {
             Restaurant::findOrFail($this->editingId)->update($data);
             session()->flash('message', 'Restaurant updated successfully!');
         } else {
             $restaurant = Restaurant::create($data);
-            // Auto-create default menu & category
             $this->getDefaultMenuAndCategory($restaurant->id);
             session()->flash('message', 'Restaurant created successfully!');
         }
@@ -206,6 +219,7 @@ class RestaurantMenuManager extends Component
         $this->item_is_available = $item->is_available;
         $this->item_is_featured = $item->is_featured;
         $this->item_sort_order = $item->sort_order;
+        $this->existing_item_image = $item->image;
         $this->showForm = true;
     }
 
@@ -219,6 +233,7 @@ class RestaurantMenuManager extends Component
             'item_is_available' => 'boolean',
             'item_is_featured' => 'boolean',
             'item_sort_order' => 'integer|min:0',
+            'item_image' => 'nullable|image|max:2048',
         ]);
 
         [$menu, $category] = $this->getDefaultMenuAndCategory($this->selectedRestaurant);
@@ -235,6 +250,11 @@ class RestaurantMenuManager extends Component
             'is_featured' => $this->item_is_featured,
             'sort_order' => $this->item_sort_order,
         ];
+
+        if ($this->item_image) {
+            $path = $this->item_image->store('menu-items', 'public');
+            $data['image'] = '/storage/' . $path;
+        }
 
         if ($this->editingId) {
             MenuItem::findOrFail($this->editingId)->update($data);
@@ -267,6 +287,8 @@ class RestaurantMenuManager extends Component
         $this->restaurant_email = '';
         $this->restaurant_address = '';
         $this->restaurant_is_active = true;
+        $this->restaurant_image = null;
+        $this->existing_restaurant_image = null;
         
         // Item form
         $this->item_name = '';
@@ -276,6 +298,8 @@ class RestaurantMenuManager extends Component
         $this->item_is_available = true;
         $this->item_is_featured = false;
         $this->item_sort_order = 0;
+        $this->item_image = null;
+        $this->existing_item_image = null;
         
         $this->resetValidation();
     }

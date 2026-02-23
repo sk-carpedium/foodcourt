@@ -79,60 +79,36 @@
         </div>
 
         <!-- Menu Items Grid -->
-        @php
-            $gradients = [
-                'from-red-400 to-red-600',
-                'from-orange-400 to-orange-600',
-                'from-amber-400 to-amber-600',
-                'from-pink-400 to-pink-600',
-                'from-rose-400 to-rose-600',
-                'from-fuchsia-400 to-fuchsia-600',
-                'from-purple-400 to-purple-600',
-                'from-violet-400 to-violet-600',
-                'from-indigo-400 to-indigo-600',
-                'from-blue-400 to-blue-600',
-                'from-teal-400 to-teal-600',
-                'from-emerald-400 to-emerald-600',
-            ];
-        @endphp
-        <div class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-3 sm:gap-5">
-            @forelse ($menuItems as $index => $item)
-                <div class="group cursor-pointer" wire:click="addToCart({{ $item->id }})">
-                    <div class="bg-gradient-to-br {{ $gradients[$index % count($gradients)] }} rounded-2xl p-3 sm:p-5 text-center shadow-lg hover:shadow-xl transform hover:scale-105 transition-all duration-200 relative overflow-hidden">
-                        <!-- Decorative circle -->
-                        <div class="absolute -top-4 -right-4 w-16 h-16 bg-white/10 rounded-full"></div>
-                        <div class="absolute -bottom-3 -left-3 w-12 h-12 bg-white/10 rounded-full"></div>
+        <div class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-2.5 sm:gap-4">
+            @forelse ($menuItems as $item)
+                <div class="bg-white rounded-xl border border-gray-200 overflow-hidden hover:shadow-md hover:border-gray-300 transition-all duration-200 group">
+                    <!-- Item Image -->
+                    @if($item->image)
+                        <img src="{{ $item->image }}" alt="{{ $item->name }}" class="w-full h-28 sm:h-36 object-cover">
+                    @else
+                        <div class="w-full h-28 sm:h-36 bg-gray-100 flex items-center justify-center">
+                            <span class="text-3xl sm:text-4xl">🍽️</span>
+                        </div>
+                    @endif
 
-                        @if($item->is_featured)
-                            <div class="absolute top-1.5 right-1.5 sm:top-2 sm:right-2">
-                                <span class="bg-yellow-400 text-yellow-900 text-[9px] sm:text-[10px] px-1.5 py-0.5 sm:px-2 sm:py-0.5 rounded-full font-bold">⭐</span>
-                            </div>
-                        @endif
-
-                        <!-- Item Icon/Image -->
-                        @if($item->image)
-                            <img src="{{ $item->image }}" alt="{{ $item->name }}" class="w-14 h-14 sm:w-20 sm:h-20 mx-auto mb-2 sm:mb-3 rounded-xl object-cover ring-2 ring-white/30 shadow-lg">
-                        @else
-                            <div class="w-14 h-14 sm:w-20 sm:h-20 mx-auto mb-2 sm:mb-3 bg-white/20 rounded-xl flex items-center justify-center ring-2 ring-white/30">
-                                <span class="text-2xl sm:text-4xl">🍽️</span>
-                            </div>
-                        @endif
-
-                        <!-- Item Name -->
-                        <h3 class="text-white font-bold text-xs sm:text-sm leading-tight mb-1 sm:mb-2 line-clamp-2">{{ $item->name }}</h3>
-
-                        <!-- Price -->
-                        <div class="bg-white/20 backdrop-blur-sm rounded-lg px-2 py-1 sm:px-3 sm:py-1.5 inline-block mb-2 sm:mb-3">
-                            <span class="text-white font-bold text-xs sm:text-base">PKR {{ number_format($item->price, 0) }}</span>
+                    <div class="p-2.5 sm:p-4">
+                        <!-- Name & Featured -->
+                        <div class="flex items-start justify-between gap-1 mb-1">
+                            <h3 class="text-gray-900 font-semibold text-xs sm:text-sm leading-tight line-clamp-2">{{ $item->name }}</h3>
+                            @if($item->is_featured)
+                                <span class="text-[9px] sm:text-[10px] bg-yellow-100 text-yellow-700 px-1.5 py-0.5 rounded-full font-medium flex-shrink-0">⭐</span>
+                            @endif
                         </div>
 
-                        <!-- Prep Time -->
-                        <div class="text-white/80 text-[9px] sm:text-xs">
-                            🕒 {{ $item->preparation_time }} min
+                        <!-- Price & Prep Time -->
+                        <div class="flex items-center justify-between mb-2 sm:mb-3">
+                            <span class="text-sm sm:text-base font-bold text-green-600">PKR {{ number_format($item->price, 0) }}</span>
+                            <span class="text-[10px] sm:text-xs text-gray-400">🕒 {{ $item->preparation_time }}m</span>
                         </div>
 
-                        <!-- Add to Cart Button -->
-                        <button class="mt-2 sm:mt-3 w-full bg-white/25 hover:bg-white/40 backdrop-blur-sm text-white text-[10px] sm:text-xs font-bold px-2 py-1.5 sm:px-3 sm:py-2 rounded-xl transition-all duration-200">
+                        <!-- Add to Cart -->
+                        <button wire:click="addToCart({{ $item->id }})" 
+                            class="w-full bg-gray-900 hover:bg-gray-800 text-white text-[10px] sm:text-xs font-medium py-1.5 sm:py-2 rounded-lg transition-colors">
                             + Add to Cart
                         </button>
                     </div>

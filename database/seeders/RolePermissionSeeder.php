@@ -58,6 +58,9 @@ class RolePermissionSeeder extends Seeder
             // Customer operations
             'place orders',
             'view own orders',
+
+            // Cashier operations
+            'view invoices',
         ];
 
         foreach ($permissions as $permission) {
@@ -119,6 +122,13 @@ class RolePermissionSeeder extends Seeder
             'update order status',
             'view menu items',
             'view menu categories',
+        ]);
+
+        // Cashier
+        $cashier = Role::firstOrCreate(['name' => 'cashier']);
+        $cashier->syncPermissions([
+            'view invoices',
+            'view orders',
         ]);
 
         // Customer

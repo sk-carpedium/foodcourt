@@ -14,32 +14,123 @@ class OrderManager extends Component
     public $statusFilter = '';
     public $orderTypeFilter = '';
     public $restaurantFilter = '';
-    public $refreshInterval = 30; // seconds
+    public $refreshInterval = 10;
+    public int $lastKnownOrderId = 0;
+    public bool $newOrderAlert = false;
+    public string $alertOrderNumber = '';
+    public string $alertCustomer = '';
+    public string $alertRestaurant = '';
+    public string $alertTotal = '';
+    public string $alertType = '';
+
+    // Kitchen ready notification
+    public bool $kitchenReadyAlert = false;
+    public string $kitchenAlertOrderNumber = '';
+    public string $kitchenAlertRestaurant = '';
+    public string $kitchenAlertItems = '';
+    public string $lastKitchenCheck = '';
 
     public function mount()
     {
         $this->authorize('view table orders');
+        
+        $latestOrder = Order::latest('id')->first();
+        $this->lastKnownOrderId = $latestOrder ? $latestOrder->id : 0;
+        $this->lastKitchenCheck = now()->toISOString();
     }
 
     #[On('order-updated')]
     public function refreshOrders()
     {
-        // Refresh the component when orders are updated
         $this->resetPage();
+    }
+
+    public function checkNewOrders()
+    {
+        $newOrders = Order::where('id', '>', $this->lastKnownOrderId)
+            ->with('restaurant')
+            ->latest('id')
+            ->get();
+
+        if ($newOrders->isNotEmpty()) {
+            $latest = $newOrders->first();
+            $this->lastKnownOrderId = $latest->id;
+            $this->newOrderAlert = true;
+            $this->alertOrderNumber = $latest->order_number;
+            $this->alertCustomer = $latest->customer_name ?? 'Guest';
+            $this->alertRestaurant = $latest->restaurant->name ?? 'Unknown';
+            $this->alertTotal = number_format($latest->total_amount, 0);
+            $this->alertType = str_replace('_', ' ', $latest->order_type);
+
+            $this->dispatch('new-order-received',
+                orderNumber: $this->alertOrderNumber,
+                customer: $this->alertCustomer,
+                restaurant: $this->alertRestaurant,
+                total: $this->alertTotal,
+                type: $this->alertType
+            );
+        }
+    }
+
+    public function dismissAlert()
+    {
+        $this->newOrderAlert = false;
+    }
+
+    public function checkKitchenReady()
+    {
+        $readyItems = \App\Models\OrderItem::where('status', 'ready')
+            ->where('updated_at', '>', $this->lastKitchenCheck)
+            ->with(['order', 'menuItem.restaurant'])
+            ->get();
+
+        if ($readyItems->isNotEmpty()) {
+            $this->lastKitchenCheck = now()->toISOString();
+
+            // Group by order to get the most relevant info
+            $byOrder = $readyItems->groupBy('order_id');
+            $firstOrderItems = $byOrder->first();
+            $order = $firstOrderItems->first()->order;
+            $restaurants = $firstOrderItems
+                ->map(fn($i) => $i->menuItem?->restaurant?->name)
+                ->filter()
+                ->unique()
+                ->implode(', ');
+            $itemNames = $firstOrderItems
+                ->map(fn($i) => $i->item_name)
+                ->take(3)
+                ->implode(', ');
+            if ($firstOrderItems->count() > 3) {
+                $itemNames .= ' +' . ($firstOrderItems->count() - 3) . ' more';
+            }
+
+            $this->kitchenReadyAlert = true;
+            $this->kitchenAlertOrderNumber = $order->order_number ?? '';
+            $this->kitchenAlertRestaurant = $restaurants;
+            $this->kitchenAlertItems = $itemNames;
+
+            $this->dispatch('kitchen-ready-received',
+                orderNumber: $this->kitchenAlertOrderNumber,
+                restaurant: $this->kitchenAlertRestaurant,
+                items: $this->kitchenAlertItems,
+            );
+        }
+    }
+
+    public function dismissKitchenAlert()
+    {
+        $this->kitchenReadyAlert = false;
     }
 
     public function render()
     {
         $user = auth()->user();
         
-        // Waiter can now see orders from all restaurants or select a specific one
-        $query = Order::with(['orderItems.menuItem', 'restaurant']);
+        $query = Order::with(['orderItems.menuItem.restaurant', 'restaurant']);
         
-        // Apply restaurant filter
         if ($this->restaurantFilter) {
             $query->where('restaurant_id', $this->restaurantFilter);
         } elseif ($user && $user->restaurant_id && !$this->restaurantFilter) {
-            // Default to user's restaurant if they have one and no filter is set
             $query->where('restaurant_id', $user->restaurant_id);
         }
 
@@ -53,12 +144,15 @@ class OrderManager extends Component
 
         $orders = $query->orderBy('created_at', 'desc')->paginate(10);
 
-        // Get all restaurants for the filter dropdown
         $restaurants = \App\Models\Restaurant::where('is_active', true)->get();
+        
+        // Count of pending orders for badge
+        $pendingCount = Order::where('status', 'pending')->count();
 
         return view('livewire.waiter.order-manager', [
             'orders' => $orders,
             'restaurants' => $restaurants,
+            'pendingCount' => $pendingCount,
             'statusOptions' => [
                 'pending' => 'Pending',
                 'confirmed' => 'Confirmed',
@@ -97,12 +191,48 @@ class OrderManager extends Component
 
     public function confirmOrder($orderId)
     {
+        $order = Order::findOrFail($orderId);
+
+        if ($order->payment_status !== 'paid') {
+            session()->flash('error', 'Please mark payment as paid before confirming the order.');
+            return;
+        }
+
         $this->updateOrderStatus($orderId, 'confirmed');
     }
 
     public function markAsServed($orderId)
     {
         $this->updateOrderStatus($orderId, 'served');
+    }
+
+    public function serveRestaurantItems($orderId, $restaurantId)
+    {
+        $this->authorize('update order status');
+
+        $restaurantId = (int) $restaurantId;
+        $order = Order::with('orderItems.menuItem')->findOrFail($orderId);
+
+        // Mark only items from this restaurant as served
+        foreach ($order->orderItems as $item) {
+            if ($item->menuItem && (int) $item->menuItem->restaurant_id == $restaurantId) {
+                $item->update(['status' => 'served']);
+            }
+        }
+
+        // If all items across all restaurants are served, mark the whole order as served
+        $allServed = $order->fresh()->orderItems()
+            ->where(function ($q) {
+                $q->whereNotIn('status', ['served', 'completed'])
+                  ->orWhereNull('status');
+            })->count() === 0;
+        
+        if ($allServed) {
+            $order->update(['status' => 'served']);
+        }
+
+        $this->dispatch('order-updated');
+        session()->flash('message', 'Restaurant items marked as served!');
     }
 
     public function completeOrder($orderId)
