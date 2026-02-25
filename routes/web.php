@@ -11,6 +11,7 @@ use App\Livewire\Customer\RestaurantMenu;
 use App\Livewire\Customer\Checkout;
 use App\Livewire\Waiter\OrderManager;
 use App\Livewire\Kitchen\OrderQueue;
+use App\Http\Controllers\PushSubscriptionController;
 use Illuminate\Support\Facades\Route;
 use Laravel\Fortify\Features;
 
@@ -34,6 +35,10 @@ Route::view('dashboard', 'dashboard')
     ->name('dashboard');
 
 Route::middleware(['auth'])->group(function () {
+    Route::get('push/vapid-public-key', [PushSubscriptionController::class, 'vapidPublicKey'])->name('push.vapid-key');
+    Route::post('push/subscribe', [PushSubscriptionController::class, 'store'])->name('push.subscribe');
+    Route::post('push/unsubscribe', [PushSubscriptionController::class, 'destroy'])->name('push.unsubscribe');
+
     Route::redirect('settings', 'settings/profile');
 
     Route::get('settings/profile', Profile::class)->name('profile.edit');
