@@ -25,10 +25,15 @@ class PushSubscriptionController extends Controller
             'subscription.keys.auth' => 'required|string',
         ]);
 
+        $endpoint = $validated['subscription']['endpoint'];
+        $endpointHash = hash('sha256', $endpoint);
+
         PushSubscription::updateOrCreate(
-            ['endpoint' => $validated['subscription']['endpoint']],
+            ['endpoint_hash' => $endpointHash],
             [
                 'user_id' => $request->user()->id,
+                'endpoint' => $endpoint,
+                'endpoint_hash' => $endpointHash,
                 'channel' => $validated['channel'],
                 'public_key' => $validated['subscription']['keys']['p256dh'],
                 'auth_token' => $validated['subscription']['keys']['auth'],
@@ -45,7 +50,7 @@ class PushSubscriptionController extends Controller
             'endpoint' => 'required|string',
         ]);
 
-        PushSubscription::where('endpoint', $validated['endpoint'])
+        PushSubscription::where('endpoint_hash', hash('sha256', $validated['endpoint']))
             ->where('user_id', $request->user()->id)
             ->delete();
 
