@@ -3,7 +3,6 @@
 namespace App\Livewire\Waiter;
 
 use App\Models\Order;
-use App\Services\WebPushService;
 use Livewire\Component;
 use Livewire\WithPagination;
 use Livewire\Attributes\On;
@@ -200,11 +199,6 @@ class OrderManager extends Component
         }
 
         $this->updateOrderStatus($orderId, 'confirmed');
-
-        // Push notify relevant kitchen users for this confirmed/paid order.
-        app(WebPushService::class)->notifyKitchensForConfirmedOrder(
-            $order->fresh()->load('orderItems.menuItem.restaurant')
-        );
     }
 
     public function markAsServed($orderId)

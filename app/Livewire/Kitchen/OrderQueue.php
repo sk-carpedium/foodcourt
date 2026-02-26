@@ -4,7 +4,6 @@ namespace App\Livewire\Kitchen;
 
 use App\Models\Order;
 use App\Models\OrderItem;
-use App\Services\WebPushService;
 use Livewire\Component;
 use Livewire\Attributes\On;
 
@@ -185,14 +184,6 @@ class OrderQueue extends Component
         if ($notReady === 0) {
             $order->update(['status' => 'ready']);
         }
-
-        // Notify waiters when this kitchen has finished all of its items.
-        if ($this->allKitchenItemsReadyForOrder($order->id, $restaurantId)) {
-            app(WebPushService::class)->notifyWaitersKitchenReady(
-                $order->fresh()->load('orderItems.menuItem.restaurant'),
-                $restaurantId
-            );
-        }
         
         $this->dispatch('order-updated');
         $this->dispatch('order-status-changed', orderId: $orderId, status: 'ready');
@@ -221,16 +212,6 @@ class OrderQueue extends Component
         } elseif ($order->status === 'confirmed') {
             $order->update(['status' => 'preparing']);
         }
-
-        if ($status === 'ready') {
-            $restaurantId = (int) auth()->user()->restaurant_id;
-            if ($this->allKitchenItemsReadyForOrder($order->id, $restaurantId)) {
-                app(WebPushService::class)->notifyWaitersKitchenReady(
-                    $order->fresh()->load('orderItems.menuItem.restaurant'),
-                    $restaurantId
-                );
-            }
-        }
         
         $this->dispatch('order-updated');
         session()->flash('message', 'Item status updated!');
@@ -247,20 +228,5 @@ class OrderQueue extends Component
     {
         $this->refreshQueue();
         session()->flash('message', 'Kitchen queue refreshed!');
-    }
-
-    private function allKitchenItemsReadyForOrder(int $orderId, int $restaurantId): bool
-    {
-        $notReadyCount = OrderItem::where('order_id', $orderId)
-            ->whereHas('menuItem', function ($q) use ($restaurantId) {
-                $q->where('restaurant_id', $restaurantId);
-            })
-            ->where(function ($q) {
-                $q->where('status', '!=', 'ready')
-                  ->orWhereNull('status');
-            })
-            ->count();
-
-        return $notReadyCount === 0;
     }
 }
