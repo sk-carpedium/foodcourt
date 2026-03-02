@@ -18,6 +18,25 @@ Route::get('/', function () {
     return view('welcome');
 })->name('home');
 
+// Runtime Firebase config for page + service worker
+Route::get('/firebase-config-runtime.js', function () {
+    $payload = [
+        'apiKey' => env('FIREBASE_API_KEY', ''),
+        'authDomain' => env('FIREBASE_AUTH_DOMAIN', ''),
+        'projectId' => env('FIREBASE_PROJECT_ID', ''),
+        'storageBucket' => env('FIREBASE_STORAGE_BUCKET', ''),
+        'messagingSenderId' => env('FIREBASE_MESSAGING_SENDER_ID', ''),
+        'appId' => env('FIREBASE_APP_ID', ''),
+        'measurementId' => env('FIREBASE_MEASUREMENT_ID', ''),
+    ];
+
+    $js = 'self.FIREBASE_CONFIG = ' . json_encode($payload, JSON_UNESCAPED_SLASHES) . ';';
+
+    return response($js, 200)
+        ->header('Content-Type', 'application/javascript')
+        ->header('Cache-Control', 'no-store, no-cache, must-revalidate, max-age=0');
+})->name('firebase.config.runtime');
+
 // FCM Token Registration (for web push notifications)
 Route::post('/api/fcm/register', function (\Illuminate\Http\Request $request) {
     if (!auth()->check()) {

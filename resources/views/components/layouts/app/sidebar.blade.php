@@ -146,6 +146,8 @@
         {{ $slot }}
 
         @fluxScripts
+
+        <script src="{{ route('firebase.config.runtime') }}"></script>
         
         <!-- FCM Push Notifications -->
         <script src="{{ asset('js/fcm-init.js') }}"></script>

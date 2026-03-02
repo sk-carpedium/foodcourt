@@ -26,8 +26,8 @@ class OrderNotificationService
             'table_number' => $order->table_number,
         ]);
 
+        // Waiters are global in this project (not restaurant-restricted).
         $waiters = User::role('waiter')
-            ->where('restaurant_id', $order->restaurant_id)
             ->whereNotNull('fcm_token')
             ->get();
 
@@ -43,9 +43,7 @@ class OrderNotificationService
         ]);
 
         if ($waiters->isEmpty()) {
-            \Log::warning('⚠️ No waiters with FCM tokens found for restaurant', [
-                'restaurant_id' => $order->restaurant_id,
-            ]);
+            \Log::warning('⚠️ No waiters with FCM tokens found');
             return;
         }
 
@@ -120,8 +118,8 @@ class OrderNotificationService
      */
     public function notifyWaiterOrderReady(Order $order)
     {
+        // Waiters are global in this project (not restaurant-restricted).
         $waiters = User::role('waiter')
-            ->where('restaurant_id', $order->restaurant_id)
             ->whereNotNull('fcm_token')
             ->get();
 

@@ -1,218 +1,141 @@
-// Simple FCM initialization without modules
-console.log('FCM Init script loaded');
+// Minimal, robust FCM setup for staff dashboards
+(function () {
+    const allowedRoles = ['waiter', 'kitchen', 'admin', 'super-admin'];
+    const userRole = document.body.dataset.userRole || '';
+    if (!allowedRoles.includes(userRole)) return;
+    if (!('serviceWorker' in navigator) || !('Notification' in window)) return;
 
-// Check if service worker is supported
-if ('serviceWorker' in navigator) {
-    console.log('Service Worker supported');
-    
-    // Register service worker
-    navigator.serviceWorker.register('/firebase-messaging-sw.js')
-        .then((registration) => {
-            console.log('Service Worker registered:', registration);
-        })
-        .catch((error) => {
-            console.error('Service Worker registration failed:', error);
-        });
-} else {
-    console.warn('Service Worker not supported in this browser');
-}
-
-// Request notification permission
-function requestNotificationPermission() {
-    console.log('Requesting notification permission...');
-    
-    if (!('Notification' in window)) {
-        console.error('This browser does not support notifications');
+    const config = window.FIREBASE_CONFIG || {};
+    const requiredKeys = ['apiKey', 'projectId', 'messagingSenderId', 'appId'];
+    const missing = requiredKeys.filter((key) => !config[key]);
+    if (missing.length > 0) {
+        console.warn('[FCM] Missing Firebase config keys:', missing.join(', '));
         return;
     }
 
-    if (Notification.permission === 'granted') {
-        console.log('Notification permission already granted');
-        initializeFirebase();
-    } else if (Notification.permission !== 'denied') {
-        Notification.requestPermission().then((permission) => {
-            console.log('Notification permission:', permission);
-            if (permission === 'granted') {
-                initializeFirebase();
-            }
+    const csrfToken = document.querySelector('meta[name="csrf-token"]')?.content || '';
+
+    function loadScript(src) {
+        return new Promise((resolve, reject) => {
+            const tag = document.createElement('script');
+            tag.src = src;
+            tag.async = false;
+            tag.onload = resolve;
+            tag.onerror = reject;
+            document.head.appendChild(tag);
         });
-    } else {
-        console.warn('Notification permission denied');
     }
-}
 
-// Initialize Firebase (will be loaded from CDN)
-function initializeFirebase() {
-    console.log('Initializing Firebase...');
-    
-    // Check if Firebase is loaded
-    if (typeof firebase === 'undefined') {
-        console.error('Firebase not loaded. Loading from CDN...');
-        loadFirebaseScripts();
-        return;
+    async function loadFirebaseCompat() {
+        // Keep strict load order: app first, then messaging.
+        await loadScript('https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js');
+        await loadScript('https://www.gstatic.com/firebasejs/10.7.1/firebase-messaging-compat.js');
     }
-    
-    // Firebase is already loaded, initialize
-    setupFirebaseMessaging();
-}
 
-// Load Firebase scripts from CDN
-function loadFirebaseScripts() {
-    const scripts = [
-        'https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js',
-        'https://www.gstatic.com/firebasejs/10.7.1/firebase-messaging-compat.js'
-    ];
-    
-    let loaded = 0;
-    scripts.forEach(src => {
-        const script = document.createElement('script');
-        script.src = src;
-        script.onload = () => {
-            loaded++;
-            if (loaded === scripts.length) {
-                setupFirebaseMessaging();
-            }
+    function registerToken(token) {
+        if (!token || !csrfToken) return Promise.resolve();
+
+        return fetch('/api/fcm/register', {
+            method: 'POST',
+            credentials: 'same-origin',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-CSRF-TOKEN': csrfToken,
+                'Accept': 'application/json',
+            },
+            body: JSON.stringify({ fcm_token: token }),
+        }).catch((error) => {
+            console.error('[FCM] Token register failed:', error);
+        });
+    }
+
+    function unregisterToken() {
+        if (!csrfToken) return Promise.resolve();
+
+        return fetch('/api/fcm/unregister', {
+            method: 'POST',
+            credentials: 'same-origin',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-CSRF-TOKEN': csrfToken,
+                'Accept': 'application/json',
+            },
+            body: JSON.stringify({}),
+            keepalive: true,
+        }).catch((error) => {
+            console.error('[FCM] Token unregister failed:', error);
+        });
+    }
+
+    function showForegroundNotification(payload) {
+        if (Notification.permission !== 'granted') return;
+
+        const title = payload?.notification?.title || 'Notification';
+        const options = {
+            body: payload?.notification?.body || '',
+            icon: '/favicon.svg',
+            badge: '/favicon.svg',
+            data: payload?.data || {},
+            tag: payload?.data?.type || 'fcm-foreground',
         };
-        document.head.appendChild(script);
-    });
-}
 
-// Setup Firebase Messaging
-function setupFirebaseMessaging() {
-    console.log('Setting up Firebase Messaging...');
-    
-    try {
-        // Initialize Firebase
-        if (!firebase.apps.length) {
-            firebase.initializeApp({
-                apiKey: "AIzaSyB_y-HBjvwVN1T3spTCzqzksZrdhuzaFCw",
-                authDomain: "foodcourt-16cae.firebaseapp.com",
-                projectId: "foodcourt-16cae",
-                storageBucket: "foodcourt-16cae.firebasestorage.app",
-                messagingSenderId: "934263242172",
-                appId: "1:934263242172:web:26d5fe22562e980e8bffb9",
-                measurementId: "G-06WMNFNF2L"
-            });
-        }
-        
-        const messaging = firebase.messaging();
-        
-        // Get FCM token
-        messaging.getToken()
-            .then((token) => {
-                if (token) {
-                    console.log('FCM Token:', token);
-                    registerTokenWithBackend(token);
-                } else {
-                    console.log('No FCM token available');
-                }
-            })
-            .catch((error) => {
-                console.error('Error getting FCM token:', error);
-            });
-        
-        // Handle foreground messages
-        messaging.onMessage((payload) => {
-            console.log('🔔 Foreground message received:', payload);
-            showNotification(payload);
-            
-            // Also play a sound
+        new Notification(title, options);
+    }
+
+    async function setup() {
+        try {
+            await loadFirebaseCompat();
+
+            if (!firebase.apps.length) {
+                firebase.initializeApp(config);
+            }
+
+            const swRegistration = await navigator.serviceWorker.register('/firebase-messaging-sw.js');
+            const permission = Notification.permission === 'default'
+                ? await Notification.requestPermission()
+                : Notification.permission;
+
+            if (permission !== 'granted') return;
+
+            const messaging = firebase.messaging();
+            let token = null;
             try {
-                const audio = new Audio('/notification.mp3');
-                audio.play().catch(e => console.log('Could not play sound:', e));
-            } catch (e) {
-                console.log('Audio not available');
+                token = await messaging.getToken({ serviceWorkerRegistration: swRegistration });
+            } catch (error) {
+                console.warn('[FCM] getToken with SW registration failed, retrying:', error);
+                token = await messaging.getToken();
             }
-        });
-        
-    } catch (error) {
-        console.error('Error setting up Firebase:', error);
-    }
-}
 
-// Register token with backend
-function registerTokenWithBackend(token) {
-    console.log('Registering token with backend...');
-    
-    // Get CSRF token
-    const csrfToken = document.querySelector('meta[name="csrf-token"]')?.content;
-    
-    if (!csrfToken) {
-        console.error('CSRF token not found');
-        return;
-    }
-    
-    fetch('/api/fcm/register', {
-        method: 'POST',
-        headers: {
-            'Content-Type': 'application/json',
-            'X-CSRF-TOKEN': csrfToken,
-            'Accept': 'application/json'
-        },
-        credentials: 'same-origin',
-        body: JSON.stringify({ fcm_token: token })
-    })
-    .then(response => {
-        if (!response.ok) {
-            throw new Error(`HTTP error! status: ${response.status}`);
-        }
-        return response.json();
-    })
-    .then(data => {
-        console.log('✅ Token registered successfully:', data);
-        // Show a subtle notification instead of alert
-        if (Notification.permission === 'granted') {
-            new Notification('Notifications Enabled', {
-                body: 'You will receive order notifications',
-                icon: '/favicon.svg',
-                tag: 'fcm-setup'
+            if (token) {
+                await registerToken(token);
+            }
+
+            // Ensure logout removes token from DB + browser push registration.
+            const logoutForms = document.querySelectorAll('form[action$="/logout"]');
+            logoutForms.forEach((form) => {
+                form.addEventListener('submit', async () => {
+                    try {
+                        await unregisterToken();
+                        if (token) {
+                            await messaging.deleteToken(token).catch(() => {});
+                        }
+                        const activeNotifications = await swRegistration.getNotifications();
+                        activeNotifications.forEach((notification) => notification.close());
+                    } catch (e) {
+                        console.warn('[FCM] Logout cleanup warning:', e);
+                    }
+                });
             });
+
+            messaging.onMessage((payload) => {
+                showForegroundNotification(payload);
+            });
+        } catch (error) {
+            console.error('[FCM] Setup failed:', error);
         }
-    })
-    .catch(error => {
-        console.error('❌ Error registering token:', error);
+    }
+
+    window.addEventListener('load', () => {
+        setTimeout(setup, 800);
     });
-}
-
-// Show notification
-function showNotification(payload) {
-    console.log('📢 Showing notification:', payload);
-    
-    const title = payload.notification?.title || 'New Notification';
-    const options = {
-        body: payload.notification?.body || '',
-        icon: '/favicon.svg',
-        badge: '/favicon.svg',
-        data: payload.data,
-        requireInteraction: true,
-        tag: 'order-notification'
-    };
-    
-    console.log('Notification permission:', Notification.permission);
-    
-    if (Notification.permission === 'granted') {
-        const notification = new Notification(title, options);
-        console.log('✅ Notification created:', notification);
-        
-        notification.onclick = function(event) {
-            console.log('Notification clicked');
-            event.preventDefault();
-            window.focus();
-            notification.close();
-        };
-    } else {
-        console.warn('⚠️ Notification permission not granted:', Notification.permission);
-    }
-}
-
-// Auto-request permission for staff users
-window.addEventListener('load', () => {
-    const userRole = document.body.dataset.userRole;
-    console.log('User role:', userRole);
-    
-    if (userRole === 'waiter' || userRole === 'kitchen' || userRole === 'admin') {
-        setTimeout(() => {
-            requestNotificationPermission();
-        }, 2000);
-    }
-});
+})();
