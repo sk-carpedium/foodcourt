@@ -26,6 +26,23 @@
 
         <div class="bg-white rounded-lg shadow-sm border p-6">
             <h1 class="text-2xl font-bold mb-6 text-gray-900">Complete Your Order</h1>
+            
+            <!-- Pay First Notice -->
+            <div class="bg-blue-50 border-l-4 border-blue-500 p-4 mb-6">
+                <div class="flex items-start">
+                    <div class="flex-shrink-0">
+                        <svg class="h-5 w-5 text-blue-500" fill="currentColor" viewBox="0 0 20 20">
+                            <path fill-rule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z" clip-rule="evenodd"/>
+                        </svg>
+                    </div>
+                    <div class="ml-3">
+                        <h3 class="text-sm font-medium text-blue-800">Pay First - Order Later</h3>
+                        <div class="mt-1 text-sm text-blue-700">
+                            <p>Please complete payment before placing your order. Our waiter will collect payment and then your order will be sent to the kitchen for preparation.</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
 
             @if (session()->has('error'))
                 <div class="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded mb-6">
@@ -74,26 +91,26 @@
                         </div>
 
                         <div>
-                            <label class="block text-sm font-medium text-gray-700 mb-1">Payment Method *</label>
+                            <label class="block text-sm font-medium text-gray-700 mb-1">Payment Method * (Pay First)</label>
                             <div class="grid grid-cols-1 sm:grid-cols-3 gap-3">
                                 <label class="relative">
-                                    <input type="radio" wire:model="payment_method" value="cash" class="sr-only peer">
+                                    <input type="radio" wire:model.live="payment_method" value="cash" class="sr-only peer">
                                     <div class="flex items-center justify-center p-4 border-2 border-gray-200 rounded-lg cursor-pointer peer-checked:border-blue-500 peer-checked:bg-blue-50 hover:border-gray-300 transition-colors">
                                         <div class="text-center">
                                             <div class="text-2xl mb-1">💵</div>
                                             <div class="font-medium text-gray-900">Cash</div>
-                                            <div class="text-xs text-gray-500">Pay on delivery/pickup</div>
+                                            <div class="text-xs text-gray-500">Pay to waiter first</div>
                                         </div>
                                     </div>
                                 </label>
 
                                 <label class="relative">
-                                    <input type="radio" wire:model="payment_method" value="card" class="sr-only peer">
+                                    <input type="radio" wire:model.live="payment_method" value="card" class="sr-only peer">
                                     <div class="flex items-center justify-center p-4 border-2 border-gray-200 rounded-lg cursor-pointer peer-checked:border-blue-500 peer-checked:bg-blue-50 hover:border-gray-300 transition-colors">
                                         <div class="text-center">
                                             <div class="text-2xl mb-1">💳</div>
                                             <div class="font-medium text-gray-900">Card</div>
-                                            <div class="text-xs text-gray-500">Credit/Debit card</div>
+                                            <div class="text-xs text-gray-500">Pay to waiter first</div>
                                         </div>
                                     </div>
                                 </label>
@@ -129,8 +146,12 @@
 
                         <button type="submit" 
                             class="w-full bg-green-600 text-white py-3 px-4 rounded-lg font-semibold hover:bg-green-700 transition-colors">
-                            Place Order - PKR {{ number_format($total, 2) }}
+                            Confirm Order (Pay First) - PKR {{ number_format($total, 2) }}
                         </button>
+                        
+                        <p class="text-xs text-gray-500 text-center mt-2">
+                            ⚠️ Payment will be collected by waiter before order preparation
+                        </p>
                     </form>
                 </div>
 
@@ -158,7 +179,7 @@
                             </div>
                             
                             <div class="flex justify-between">
-                                <span>Tax (10%):</span>
+                                <span>Tax ({{ $this->getTaxRate() }}%):</span>
                                 <span>PKR {{ number_format($taxAmount, 2) }}</span>
                             </div>
                             
@@ -214,11 +235,29 @@
 
                     <!-- Estimated Time -->
                     <div class="bg-yellow-50 rounded-lg p-4">
-                        <h3 class="font-medium text-yellow-900 mb-2">Estimated Time</h3>
-                        <div class="text-sm text-yellow-800">
-                            <p>🕒 Your order will be ready in approximately <strong>{{ $this->getEstimatedTime() }} minutes</strong></p>
+                        <h3 class="font-medium text-yellow-900 mb-2">⏱️ Order Process</h3>
+                        <div class="text-sm text-yellow-800 space-y-2">
+                            <p class="flex items-start">
+                                <span class="font-semibold mr-2">1.</span>
+                                <span>Waiter will be notified of your order</span>
+                            </p>
+                            <p class="flex items-start">
+                                <span class="font-semibold mr-2">2.</span>
+                                <span>Waiter collects payment (Cash/Card)</span>
+                            </p>
+                            <p class="flex items-start">
+                                <span class="font-semibold mr-2">3.</span>
+                                <span>Order sent to kitchen for preparation</span>
+                            </p>
+                            <p class="flex items-start">
+                                <span class="font-semibold mr-2">4.</span>
+                                <span>Ready in approximately <strong>{{ $this->getEstimatedTime() }} minutes</strong></span>
+                            </p>
                             @if($order_type === 'delivery')
-                                <p class="mt-1">🚚 Plus 15-20 minutes for delivery</p>
+                                <p class="flex items-start">
+                                    <span class="font-semibold mr-2">5.</span>
+                                    <span>🚚 Delivery in 15-20 minutes after preparation</span>
+                                </p>
                             @endif
                         </div>
                     </div>

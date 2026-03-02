@@ -37,4 +37,9 @@ return [
         'access_token' => env('MAPBOX_ACCESS_TOKEN'),
     ],
 
+    // Firebase Cloud Messaging (V1 API)
+    'fcm' => [
+        'project_id' => env('FIREBASE_PROJECT_ID'),
+    ],
+
 ];

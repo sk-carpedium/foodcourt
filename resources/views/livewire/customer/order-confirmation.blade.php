@@ -8,7 +8,8 @@
                     </svg>
                 </div>
                 <h1 class="mt-4 text-3xl font-bold text-gray-900">Order Confirmed!</h1>
-                <p class="mt-2 text-lg text-gray-600">Thank you for your order. We're preparing it now.</p>
+                <p class="mt-2 text-lg text-gray-600">Thank you for your order.</p>
+                <p class="mt-1 text-sm text-blue-600 font-medium">⚠️ Please pay to waiter before preparation begins</p>
             </div>
 
             <!-- Order Details Card -->
@@ -117,28 +118,53 @@
 
             <!-- Next Steps -->
             <div class="bg-yellow-50 rounded-lg p-4 mb-6">
-                <h3 class="font-medium text-yellow-900 mb-2">What's Next?</h3>
-                <div class="text-sm text-yellow-800 space-y-1">
-                    @if($order->order_type === 'dine_in')
-                        <p>🍽️ Please proceed to your table. Your food will be served when ready.</p>
-                    @elseif($order->order_type === 'takeaway')
-                        <p>🥡 Your order is being prepared. Please wait for pickup notification.</p>
-                    @else
-                        <p>🚚 Your order is being prepared and will be delivered to your address.</p>
-                    @endif
+                <h3 class="font-medium text-yellow-900 mb-2">📋 What's Next?</h3>
+                <div class="text-sm text-yellow-800 space-y-2">
+                    <p class="flex items-start">
+                        <span class="font-semibold mr-2">1.</span>
+                        <span>Waiter has been notified of your order</span>
+                    </p>
+                    <p class="flex items-start">
+                        <span class="font-semibold mr-2">2.</span>
+                        <span>Waiter will collect payment ({{ $order->payment_method === 'cash' ? 'Cash' : 'Card' }})</span>
+                    </p>
+                    <p class="flex items-start">
+                        <span class="font-semibold mr-2">3.</span>
+                        <span>After payment, order will be sent to kitchen</span>
+                    </p>
+                    <p class="flex items-start">
+                        <span class="font-semibold mr-2">4.</span>
+                        <span>
+                            @if($order->order_type === 'dine_in')
+                                🍽️ Food will be served to your table when ready
+                            @elseif($order->order_type === 'takeaway')
+                                🥡 You'll be notified when ready for pickup
+                            @else
+                                🚚 Order will be delivered to your address
+                            @endif
+                        </span>
+                    </p>
                     @if($order->estimated_ready_at)
                         @php
                             $minutesRemaining = $order->estimated_ready_at->diffInMinutes(now(), false);
                         @endphp
-                        @if($minutesRemaining > 0)
-                            <p>⏰ Estimated preparation time: {{ ceil($minutesRemaining) }} minutes</p>
-                        @elseif($order->status === 'ready' || $order->status === 'served' || $order->status === 'completed')
-                            <p>✅ Your order is ready!</p>
-                        @else
-                            <p>👨‍🍳 Your order is being prepared and should be ready soon!</p>
-                        @endif
+                        <p class="flex items-start pt-2 border-t border-yellow-200">
+                            <span class="font-semibold mr-2">⏰</span>
+                            <span>
+                                @if($minutesRemaining > 0)
+                                    Estimated preparation time: {{ ceil($minutesRemaining) }} minutes (after payment)
+                                @elseif($order->status === 'ready' || $order->status === 'served' || $order->status === 'completed')
+                                    Your order is ready!
+                                @else
+                                    Your order is being prepared and should be ready soon!
+                                @endif
+                            </span>
+                        </p>
                     @else
-                        <p>⏰ Estimated preparation time: 15-25 minutes</p>
+                        <p class="flex items-start pt-2 border-t border-yellow-200">
+                            <span class="font-semibold mr-2">⏰</span>
+                            <span>Estimated preparation time: 15-25 minutes (after payment)</span>
+                        </p>
                     @endif
                 </div>
             </div>

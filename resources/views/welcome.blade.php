@@ -44,8 +44,8 @@
                 <!-- Right Content - Food Image -->
                 <div class="relative">
                     <div class="relative z-10">
-                        <div class="bg-white rounded-3xl p-8 shadow-2xl transform rotate-3 hover:rotate-0 transition-transform duration-300">
-                            <div class="text-8xl text-center mb-4">🍕</div>
+                        <div class="bg-white rounded-3xl p-8 shadow-2xl transform  transition-transform duration-300">
+                            <!-- <div class="text-8xl text-center mb-4">🍕</div> -->
                             <div class="text-center">
                                 <h3 class="text-xl font-bold text-gray-800 mb-2">For Advertisement</h3>
                                 <div class="flex items-center justify-center space-x-1 mb-3">

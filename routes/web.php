@@ -18,6 +18,48 @@ Route::get('/', function () {
     return view('welcome');
 })->name('home');
 
+// FCM Token Registration (for web push notifications)
+Route::post('/api/fcm/register', function (\Illuminate\Http\Request $request) {
+    if (!auth()->check()) {
+        return response()->json([
+            'success' => false,
+            'message' => 'Unauthenticated',
+        ], 401);
+    }
+
+    $request->validate([
+        'fcm_token' => 'required|string',
+    ]);
+
+    auth()->user()->update([
+        'fcm_token' => $request->fcm_token,
+    ]);
+
+    return response()->json([
+        'success' => true,
+        'message' => 'FCM token registered successfully',
+        'user' => auth()->user()->name,
+    ]);
+})->name('fcm.register');
+
+Route::post('/api/fcm/unregister', function (\Illuminate\Http\Request $request) {
+    if (!auth()->check()) {
+        return response()->json([
+            'success' => false,
+            'message' => 'Unauthenticated',
+        ], 401);
+    }
+
+    auth()->user()->update([
+        'fcm_token' => null,
+    ]);
+
+    return response()->json([
+        'success' => true,
+        'message' => 'FCM token removed successfully',
+    ]);
+})->name('fcm.unregister');
+
 // Customer Routes (Public)
 Route::get('/restaurant/{restaurantSlug}/menu', [App\Http\Controllers\RestaurantController::class, 'menu'])->name('menu');
 Route::get('/restaurant/{restaurantSlug}/checkout', [App\Http\Controllers\RestaurantController::class, 'checkout'])->name('checkout');

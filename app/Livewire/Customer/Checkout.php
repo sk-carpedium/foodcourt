@@ -107,6 +107,10 @@ class Checkout extends Component
             ]);
         }
 
+        // Send notification to waiter
+        $notificationService = app(\App\Services\OrderNotificationService::class);
+        $notificationService->notifyWaiterNewOrder($order);
+
         // Clear cart
         session()->forget('cart');
 
@@ -124,7 +128,14 @@ class Checkout extends Component
 
     private function getTaxAmount()
     {
-        return $this->getSubtotal() * 0.1; // 10% tax
+        // 8% tax for card, 15% tax for cash/bank_transfer
+        $taxRate = $this->payment_method === 'card' ? 0.08 : 0.15;
+        return $this->getSubtotal() * $taxRate;
+    }
+
+    public function getTaxRate()
+    {
+        return $this->payment_method === 'card' ? 8 : 15;
     }
 
     private function getDeliveryFee()

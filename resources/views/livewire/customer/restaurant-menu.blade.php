@@ -106,11 +106,33 @@
                             <span class="text-[10px] sm:text-xs text-gray-400">🕒 {{ $item->preparation_time }}m</span>
                         </div>
 
-                        <!-- Add to Cart -->
-                        <button wire:click="addToCart({{ $item->id }})" 
-                            class="w-full bg-gray-900 hover:bg-gray-800 text-white text-[10px] sm:text-xs font-medium py-1.5 sm:py-2 rounded-lg transition-colors">
-                            + Add to Cart
-                        </button>
+                        <!-- Inline Quantity Control -->
+                        @php
+                            $itemQty = $cart[$item->id]['quantity'] ?? 0;
+                        @endphp
+
+                        @if($itemQty > 0)
+                            <div class="w-full flex items-center justify-between bg-gray-100 rounded-lg p-1">
+                                <button wire:click="updateQuantity('{{ $item->id }}', {{ $itemQty - 1 }})"
+                                    class="w-7 h-7 sm:w-8 sm:h-8 bg-white border rounded-md flex items-center justify-center hover:bg-gray-50 text-gray-700">
+                                    <svg class="w-3 h-3 sm:w-4 sm:h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20 12H4"></path>
+                                    </svg>
+                                </button>
+                                <span class="text-xs sm:text-sm font-semibold text-gray-900 min-w-6 text-center">{{ $itemQty }}</span>
+                                <button wire:click="updateQuantity('{{ $item->id }}', {{ $itemQty + 1 }})"
+                                    class="w-7 h-7 sm:w-8 sm:h-8 bg-gray-900 text-white rounded-md flex items-center justify-center hover:bg-gray-800">
+                                    <svg class="w-3 h-3 sm:w-4 sm:h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6"></path>
+                                    </svg>
+                                </button>
+                            </div>
+                        @else
+                            <button wire:click="addToCart({{ $item->id }})" 
+                                class="w-full bg-gray-900 hover:bg-gray-800 text-white text-[10px] sm:text-xs font-medium py-1.5 sm:py-2 rounded-lg transition-colors">
+                                + Add to Cart
+                            </button>
+                        @endif
                     </div>
                 </div>
             @empty
