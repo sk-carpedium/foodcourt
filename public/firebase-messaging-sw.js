@@ -29,9 +29,15 @@ if (firebase.apps.length) {
 // Handle background messages
 if (messaging) {
     messaging.onBackgroundMessage((payload) => {
-        const notificationTitle = payload?.notification?.title || 'Notification';
+        // For notification payloads, browsers can auto-display push notifications.
+        // Returning here avoids duplicate toasts (auto + manual showNotification).
+        if (payload?.notification) {
+            return;
+        }
+
+        const notificationTitle = payload?.notification?.title || payload?.data?.title || 'Notification';
         const notificationOptions = {
-            body: payload?.notification?.body || '',
+            body: payload?.notification?.body || payload?.data?.body || '',
             icon: '/favicon.svg',
             badge: '/favicon.svg',
             data: payload?.data || {},

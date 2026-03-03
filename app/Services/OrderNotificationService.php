@@ -27,9 +27,12 @@ class OrderNotificationService
         ]);
 
         // Waiters are global in this project (not restaurant-restricted).
+        // Deduplicate by token so one physical device receives one push only.
         $waiters = User::role('waiter')
             ->whereNotNull('fcm_token')
-            ->get();
+            ->get()
+            ->unique('fcm_token')
+            ->values();
 
         \Log::info('👥 Waiters found', [
             'count' => $waiters->count(),
