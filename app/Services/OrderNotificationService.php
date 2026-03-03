@@ -94,26 +94,8 @@ class OrderNotificationService
      */
     public function notifyCustomerPaymentReceived(Order $order)
     {
-        // If customer has FCM token (for mobile app)
-        if ($order->user && $order->user->fcm_token) {
-            $notification = [
-                'title' => '✅ Payment Confirmed',
-                'body' => "Your order #{$order->order_number} is confirmed and being prepared",
-                'sound' => 'default',
-            ];
-
-            $data = [
-                'type' => 'payment_confirmed',
-                'order_id' => (string) $order->id,
-                'order_number' => $order->order_number,
-                'click_action' => 'FLUTTER_NOTIFICATION_CLICK',
-            ];
-
-            $this->fcm->sendToDevice($order->user->fcm_token, $notification, $data);
-        }
-
-        // Also send email/SMS if available
-        // TODO: Implement email/SMS notification
+        // Disabled: FCM pushes are restricted to waiter role only.
+        return;
     }
 
     /**
@@ -156,37 +138,8 @@ class OrderNotificationService
      */
     public function notifyKitchenNewOrder(Order $order)
     {
-        $kitchenStaff = User::role('kitchen')
-            ->where('restaurant_id', $order->restaurant_id)
-            ->whereNotNull('fcm_token')
-            ->get();
-
-        if ($kitchenStaff->isEmpty()) {
-            return;
-        }
-
-        $itemCount = $order->orderItems->count();
-        
-        $notification = [
-            'title' => '👨‍🍳 New Order to Prepare',
-            'body' => "Order #{$order->order_number} - {$itemCount} items - Table {$order->table_number}",
-            'sound' => 'default',
-            'badge' => '1',
-        ];
-
-        $data = [
-            'type' => 'kitchen_order',
-            'order_id' => (string) $order->id,
-            'order_number' => $order->order_number,
-            'table_number' => $order->table_number ?? '',
-            'item_count' => (string) $itemCount,
-            'restaurant_id' => (string) $order->restaurant_id,
-            'click_action' => 'FLUTTER_NOTIFICATION_CLICK',
-        ];
-
-        foreach ($kitchenStaff as $staff) {
-            $this->fcm->sendToDevice($staff->fcm_token, $notification, $data);
-        }
+        // Disabled: FCM pushes are restricted to waiter role only.
+        return;
     }
 
     /**
@@ -194,21 +147,7 @@ class OrderNotificationService
      */
     public function notifyCustomerOrderServed(Order $order)
     {
-        if ($order->user && $order->user->fcm_token) {
-            $notification = [
-                'title' => '🎉 Enjoy Your Meal!',
-                'body' => "Your order has been served. Bon appétit!",
-                'sound' => 'default',
-            ];
-
-            $data = [
-                'type' => 'order_served',
-                'order_id' => (string) $order->id,
-                'order_number' => $order->order_number,
-                'click_action' => 'FLUTTER_NOTIFICATION_CLICK',
-            ];
-
-            $this->fcm->sendToDevice($order->user->fcm_token, $notification, $data);
-        }
+        // Disabled: FCM pushes are restricted to waiter role only.
+        return;
     }
 }

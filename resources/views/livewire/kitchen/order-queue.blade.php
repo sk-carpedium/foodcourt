@@ -1,4 +1,4 @@
-<div class="p-6">
+<div class="p-6" wire:poll.5s="pollQueue">
     @if(isset($error))
         <div class="bg-red-50 border border-red-200 rounded-lg p-8 text-center">
             <div class="text-red-400 text-6xl mb-4">⚠️</div>
@@ -395,14 +395,8 @@
 
     @script
     <script>
-        setInterval(() => {
-            $wire.call('refreshQueue');
-            $wire.call('checkNewConfirmedOrders');
-        }, {{ $refreshInterval * 1000 }});
-
         $wire.on('new-kitchen-order', (params) => {
             playKitchenAlertSound();
-            showBrowserNotification(params);
         });
 
         function playKitchenAlertSound() {
@@ -426,20 +420,6 @@
                 playTone(1175, 0.5, 0.3, 'sine');
                 playTone(1175, 0.85, 0.3, 'sine');
             } catch (e) {}
-        }
-
-        function showBrowserNotification(data) {
-            if ('Notification' in window && Notification.permission === 'granted') {
-                new Notification('🔔 New Kitchen Order!', {
-                    body: '#' + data.orderNumber + '\n' + data.customer + '\nItems: ' + data.items,
-                    icon: '/favicon.ico',
-                    tag: 'kitchen-new-order',
-                });
-            }
-        }
-
-        if ('Notification' in window && Notification.permission === 'default') {
-            Notification.requestPermission();
         }
 
         window.printSlip = function() {

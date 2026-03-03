@@ -39,6 +39,12 @@ class OrderQueue extends Component
         }
     }
 
+    public function pollQueue()
+    {
+        $this->refreshQueue();
+        $this->checkNewConfirmedOrders();
+    }
+
     public function checkNewConfirmedOrders()
     {
         $restaurantId = (int) auth()->user()->restaurant_id;

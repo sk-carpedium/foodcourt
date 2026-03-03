@@ -1,6 +1,6 @@
 // Minimal, robust FCM setup for staff dashboards
 (function () {
-    const allowedRoles = ['waiter', 'kitchen', 'admin', 'super-admin'];
+    const allowedRoles = ['waiter'];
     const userRole = document.body.dataset.userRole || '';
     if (!allowedRoles.includes(userRole)) return;
     if (!('serviceWorker' in navigator) || !('Notification' in window)) return;
