@@ -28,6 +28,7 @@ Route::get('/firebase-config-runtime.js', function () {
         'messagingSenderId' => env('FIREBASE_MESSAGING_SENDER_ID', ''),
         'appId' => env('FIREBASE_APP_ID', ''),
         'measurementId' => env('FIREBASE_MEASUREMENT_ID', ''),
+        'vapidKey' => env('FIREBASE_VAPID_KEY', ''),
     ];
 
     $js = 'self.FIREBASE_CONFIG = ' . json_encode($payload, JSON_UNESCAPED_SLASHES) . ';';

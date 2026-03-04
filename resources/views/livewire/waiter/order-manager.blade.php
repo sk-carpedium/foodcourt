@@ -1,4 +1,8 @@
 <div class="min-h-screen bg-gradient-to-br from-slate-50 to-blue-50 p-4 sm:p-6">
+    <div wire:loading.flex wire:target="resetFilters,refreshData,serveRestaurantItems,updatePaymentStatus,confirmOrder,completeOrder,markAsServed,dismissAlert,dismissKitchenAlert" class="fixed inset-0 z-[60] items-center justify-center bg-black/30 backdrop-blur-[1px]">
+        <div class="bg-white text-gray-800 px-4 py-2 rounded-lg shadow font-medium">Processing... please wait</div>
+    </div>
+
     @if(isset($error))
         <div class="bg-red-50 border border-red-200 rounded-xl p-8 text-center shadow-sm">
             <div class="text-red-400 text-6xl mb-4">⚠️</div>
@@ -7,9 +11,9 @@
             <div class="bg-white rounded-lg p-4 mt-4">
                 <h3 class="font-semibold text-gray-800 mb-2">Available Test Accounts:</h3>
                 <div class="text-sm text-gray-600 space-y-1">
-                    <p><strong>Waiter:</strong> waiter@gourmetkitchen.com / password</p>
-                    <p><strong>Kitchen:</strong> kitchen@gourmetkitchen.com / password</p>
-                    <p><strong>Admin:</strong> admin@gourmetkitchen.com / password</p>
+                    <p><strong>Waiter:</strong> waiter@admin.com / password</p>
+                    <p><strong>Kitchen:</strong> kitchen@admin.com / password</p>
+                    <p><strong>Admin:</strong> admin@admin.com / password</p>
                 </div>
             </div>
         </div>
@@ -34,10 +38,10 @@
                     <p class="text-slate-600 mt-1">Independent Waiter Portal</p>
                 </div>
                 <div class="flex flex-col sm:flex-row space-y-2 sm:space-y-0 sm:space-x-3">
-                    <button wire:click="resetFilters" class="bg-gradient-to-r from-gray-500 to-gray-600 text-white px-6 py-2.5 rounded-lg hover:from-gray-600 hover:to-gray-700 transition-all duration-200 shadow-sm font-medium text-sm">
+                    <button wire:click="resetFilters" wire:loading.attr="disabled" wire:target="resetFilters" class="bg-gradient-to-r from-gray-500 to-gray-600 text-white px-6 py-2.5 rounded-lg hover:from-gray-600 hover:to-gray-700 transition-all duration-200 shadow-sm font-medium text-sm disabled:opacity-60 disabled:cursor-not-allowed">
                         🔄 Reset Filters
                     </button>
-                    <button wire:click="refreshData" class="bg-gradient-to-r from-blue-500 to-blue-600 text-white px-6 py-2.5 rounded-lg hover:from-blue-600 hover:to-blue-700 transition-all duration-200 shadow-sm font-medium text-sm">
+                    <button wire:click="refreshData" wire:loading.attr="disabled" wire:target="refreshData" class="bg-gradient-to-r from-blue-500 to-blue-600 text-white px-6 py-2.5 rounded-lg hover:from-blue-600 hover:to-blue-700 transition-all duration-200 shadow-sm font-medium text-sm disabled:opacity-60 disabled:cursor-not-allowed">
                         <svg class="w-4 h-4 inline mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"></path>
                         </svg>
@@ -258,8 +262,8 @@
                                     {{ $restName }}
                                 </div>
                                 @if($allReady && !$allServed)
-                                    <button wire:click="serveRestaurantItems({{ $order->id }}, {{ $restId }})"
-                                        class="bg-green-500 text-white px-3 py-1 rounded-full text-xs font-semibold hover:bg-green-600 transition-colors flex items-center gap-1">
+                                    <button wire:click="serveRestaurantItems({{ $order->id }}, {{ $restId }})" wire:loading.attr="disabled" wire:target="serveRestaurantItems"
+                                        class="bg-green-500 text-white px-3 py-1 rounded-full text-xs font-semibold hover:bg-green-600 transition-colors flex items-center gap-1 disabled:opacity-60 disabled:cursor-not-allowed">
                                         🍽️ Serve
                                     </button>
                                 @elseif($allServed)
@@ -328,8 +332,8 @@
                         <div class="flex flex-wrap gap-2">
                             {{-- Payment first, then confirm --}}
                             @if($order->status === 'pending' && $order->payment_status !== 'paid')
-                                <button wire:click="updatePaymentStatus({{ $order->id }}, 'paid')" 
-                                    class="bg-gradient-to-r from-emerald-500 to-emerald-600 text-white px-6 py-2.5 rounded-lg hover:from-emerald-600 hover:to-emerald-700 transition-all duration-200 shadow-sm font-medium flex items-center">
+                                <button wire:click="updatePaymentStatus({{ $order->id }}, 'paid')" wire:loading.attr="disabled" wire:target="updatePaymentStatus"
+                                    class="bg-gradient-to-r from-emerald-500 to-emerald-600 text-white px-6 py-2.5 rounded-lg hover:from-emerald-600 hover:to-emerald-700 transition-all duration-200 shadow-sm font-medium flex items-center disabled:opacity-60 disabled:cursor-not-allowed">
                                     <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1"></path>
                                     </svg>
@@ -345,8 +349,8 @@
                             @endif
 
                             @if($order->status === 'pending' && $order->payment_status === 'paid')
-                                <button wire:click="confirmOrder({{ $order->id }})" 
-                                    class="bg-gradient-to-r from-blue-500 to-blue-600 text-white px-6 py-2.5 rounded-lg hover:from-blue-600 hover:to-blue-700 transition-all duration-200 shadow-sm font-medium flex items-center">
+                                <button wire:click="confirmOrder({{ $order->id }})" wire:loading.attr="disabled" wire:target="confirmOrder"
+                                    class="bg-gradient-to-r from-blue-500 to-blue-600 text-white px-6 py-2.5 rounded-lg hover:from-blue-600 hover:to-blue-700 transition-all duration-200 shadow-sm font-medium flex items-center disabled:opacity-60 disabled:cursor-not-allowed">
                                     <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path>
                                     </svg>
@@ -355,8 +359,8 @@
                             @endif
                             
                             @if($order->status === 'served')
-                                <button wire:click="completeOrder({{ $order->id }})" 
-                                    class="bg-gradient-to-r from-purple-500 to-purple-600 text-white px-6 py-2.5 rounded-lg hover:from-purple-600 hover:to-purple-700 transition-all duration-200 shadow-sm font-medium flex items-center">
+                                <button wire:click="completeOrder({{ $order->id }})" wire:loading.attr="disabled" wire:target="completeOrder"
+                                    class="bg-gradient-to-r from-purple-500 to-purple-600 text-white px-6 py-2.5 rounded-lg hover:from-purple-600 hover:to-purple-700 transition-all duration-200 shadow-sm font-medium flex items-center disabled:opacity-60 disabled:cursor-not-allowed">
                                     <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path>
                                     </svg>
@@ -368,8 +372,8 @@
                         <!-- Payment Status Actions (for non-pending orders) -->
                         <div class="flex flex-wrap gap-2">
                             @if($order->status !== 'pending' && $order->payment_status === 'pending')
-                                <button wire:click="updatePaymentStatus({{ $order->id }}, 'paid')" 
-                                    class="bg-gradient-to-r from-emerald-500 to-emerald-600 text-white px-4 py-2.5 rounded-lg hover:from-emerald-600 hover:to-emerald-700 transition-all duration-200 shadow-sm font-medium text-sm flex items-center">
+                                <button wire:click="updatePaymentStatus({{ $order->id }}, 'paid')" wire:loading.attr="disabled" wire:target="updatePaymentStatus"
+                                    class="bg-gradient-to-r from-emerald-500 to-emerald-600 text-white px-4 py-2.5 rounded-lg hover:from-emerald-600 hover:to-emerald-700 transition-all duration-200 shadow-sm font-medium text-sm flex items-center disabled:opacity-60 disabled:cursor-not-allowed">
                                     <svg class="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1"></path>
                                     </svg>
@@ -378,8 +382,8 @@
                             @endif
                             
                             @if($order->payment_status === 'paid' && in_array($order->status, ['served', 'completed']))
-                                <button wire:click="updatePaymentStatus({{ $order->id }}, 'refunded')" 
-                                    class="bg-gradient-to-r from-red-500 to-red-600 text-white px-4 py-2.5 rounded-lg hover:from-red-600 hover:to-red-700 transition-all duration-200 shadow-sm font-medium text-sm flex items-center">
+                                <button wire:click="updatePaymentStatus({{ $order->id }}, 'refunded')" wire:loading.attr="disabled" wire:target="updatePaymentStatus"
+                                    class="bg-gradient-to-r from-red-500 to-red-600 text-white px-4 py-2.5 rounded-lg hover:from-red-600 hover:to-red-700 transition-all duration-200 shadow-sm font-medium text-sm flex items-center disabled:opacity-60 disabled:cursor-not-allowed">
                                     <svg class="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"></path>
                                     </svg>
@@ -388,8 +392,8 @@
                             @endif
                             
                             @if($order->payment_status === 'failed')
-                                <button wire:click="updatePaymentStatus({{ $order->id }}, 'pending')" 
-                                    class="bg-gradient-to-r from-yellow-500 to-yellow-600 text-white px-4 py-2.5 rounded-lg hover:from-yellow-600 hover:to-yellow-700 transition-all duration-200 shadow-sm font-medium text-sm flex items-center">
+                                <button wire:click="updatePaymentStatus({{ $order->id }}, 'pending')" wire:loading.attr="disabled" wire:target="updatePaymentStatus"
+                                    class="bg-gradient-to-r from-yellow-500 to-yellow-600 text-white px-4 py-2.5 rounded-lg hover:from-yellow-600 hover:to-yellow-700 transition-all duration-200 shadow-sm font-medium text-sm flex items-center disabled:opacity-60 disabled:cursor-not-allowed">
                                     <svg class="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"></path>
                                     </svg>
@@ -413,11 +417,11 @@
                 </p>
                 <div class="flex flex-col sm:flex-row gap-3 justify-center">
                     @if($restaurantFilter || $statusFilter || $orderTypeFilter)
-                        <button wire:click="resetFilters" class="bg-gradient-to-r from-blue-500 to-blue-600 text-white px-6 py-2.5 rounded-lg hover:from-blue-600 hover:to-blue-700 transition-all duration-200 shadow-sm font-medium">
+                        <button wire:click="resetFilters" wire:loading.attr="disabled" wire:target="resetFilters" class="bg-gradient-to-r from-blue-500 to-blue-600 text-white px-6 py-2.5 rounded-lg hover:from-blue-600 hover:to-blue-700 transition-all duration-200 shadow-sm font-medium disabled:opacity-60 disabled:cursor-not-allowed">
                             Clear All Filters
                         </button>
                     @endif
-                    <button wire:click="refreshData" class="bg-gradient-to-r from-gray-500 to-gray-600 text-white px-6 py-2.5 rounded-lg hover:from-gray-600 hover:to-gray-700 transition-all duration-200 shadow-sm font-medium">
+                    <button wire:click="refreshData" wire:loading.attr="disabled" wire:target="refreshData" class="bg-gradient-to-r from-gray-500 to-gray-600 text-white px-6 py-2.5 rounded-lg hover:from-gray-600 hover:to-gray-700 transition-all duration-200 shadow-sm font-medium disabled:opacity-60 disabled:cursor-not-allowed">
                         Refresh Orders
                     </button>
                 </div>
@@ -524,6 +528,24 @@
 
         function showBrowserNotification(title, body, tag) {
             if ('Notification' in window && Notification.permission === 'granted') {
+                if ('serviceWorker' in navigator) {
+                    navigator.serviceWorker.getRegistration().then((registration) => {
+                        if (registration) {
+                            registration.showNotification(title, {
+                                body: body,
+                                icon: '/favicon.ico',
+                                badge: '/favicon.ico',
+                                tag: tag,
+                            });
+                            return;
+                        }
+                        new Notification(title, { body: body, icon: '/favicon.ico', tag: tag });
+                    }).catch(() => {
+                        new Notification(title, { body: body, icon: '/favicon.ico', tag: tag });
+                    });
+                    return;
+                }
+
                 new Notification(title, { body: body, icon: '/favicon.ico', tag: tag });
             }
         }

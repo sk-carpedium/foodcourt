@@ -11,13 +11,18 @@ class FcmService
     protected $client;
     protected $projectId;
     protected $serviceAccountPath;
+    protected $serviceAccountJson;
     protected $accessToken;
 
-    public function __construct()
+    public function __construct(Client $client = null)
     {
-        $this->client = new Client();
+        // allow injecting a custom HTTP client for testing/flexibility
+        $this->client = $client ?: new Client();
         $this->projectId = config('services.fcm.project_id');
-        $this->serviceAccountPath = storage_path('app/firebase-service-account.json');
+        $this->serviceAccountPath = config('services.fcm.service_account_path')
+            ?: env('GOOGLE_APPLICATION_CREDENTIALS')
+            ?: storage_path('app/firebase-service-account.json');
+        $this->serviceAccountJson = config('services.fcm.service_account_json');
     }
 
     /**
@@ -28,15 +33,7 @@ class FcmService
         // Cache the token for 55 minutes (tokens are valid for 1 hour)
         return Cache::remember('fcm_access_token', 55 * 60, function () {
             try {
-                if (!file_exists($this->serviceAccountPath)) {
-                    throw new \Exception('Service account file not found at: ' . $this->serviceAccountPath);
-                }
-
-                $serviceAccount = json_decode(file_get_contents($this->serviceAccountPath), true);
-                
-                if (!$serviceAccount) {
-                    throw new \Exception('Invalid service account JSON');
-                }
+                $serviceAccount = $this->loadServiceAccount();
 
                 // Create JWT
                 $now = time();
@@ -95,6 +92,43 @@ class FcmService
     }
 
     /**
+     * Load Firebase service account from env JSON or file path.
+     */
+    protected function loadServiceAccount(): array
+    {
+        if (!empty($this->serviceAccountJson)) {
+            $raw = trim($this->serviceAccountJson);
+            $serviceAccount = json_decode($raw, true);
+
+            // allow base64-encoded JSON for safer env storage
+            if (!$serviceAccount) {
+                $decoded = base64_decode($raw, true);
+                if ($decoded !== false) {
+                    $serviceAccount = json_decode($decoded, true);
+                }
+            }
+
+            if (is_array($serviceAccount) && isset($serviceAccount['private_key'], $serviceAccount['client_email'])) {
+                return $serviceAccount;
+            }
+
+            throw new \Exception('Invalid FIREBASE_SERVICE_ACCOUNT_JSON (expected raw or base64 JSON service account)');
+        }
+
+        if (!empty($this->serviceAccountPath) && file_exists($this->serviceAccountPath)) {
+            $serviceAccount = json_decode(file_get_contents($this->serviceAccountPath), true);
+            if (is_array($serviceAccount) && isset($serviceAccount['private_key'], $serviceAccount['client_email'])) {
+                return $serviceAccount;
+            }
+            throw new \Exception('Invalid service account JSON at: ' . $this->serviceAccountPath);
+        }
+
+        throw new \Exception(
+            'Firebase service account not found. Set FIREBASE_SERVICE_ACCOUNT_PATH or FIREBASE_SERVICE_ACCOUNT_JSON.'
+        );
+    }
+
+    /**
      * Base64 URL encode
      */
     protected function base64UrlEncode($data)
@@ -127,10 +161,10 @@ class FcmService
                             'icon' => url('/favicon.svg'),
                             'badge' => url('/favicon.svg'),
                             'requireInteraction' => true,
-                            'tag' => 'order-notification',
+                            'tag' => $data['type'] ?? 'order-notification',
                         ],
                         'fcm_options' => [
-                            'link' => url('/'),
+                            'link' => $data['link'] ?? url('/'),
                         ],
                         'headers' => [
                             'Urgency' => 'high',
@@ -174,6 +208,9 @@ class FcmService
                 'token' => substr($deviceToken, 0, 20) . '...',
             ]);
 
+            // attempt to clean up invalid tokens automatically
+            $this->cleanupInvalidToken($deviceToken, $responseBody);
+
             return [
                 'success' => 0,
                 'failure' => 1,
@@ -192,6 +229,35 @@ class FcmService
                 'failure' => 1,
                 'error' => $e->getMessage(),
             ];
+        }
+    }
+
+    /**
+     * Inspect an error response body for invalid tokens and clear them.
+     */
+    protected function cleanupInvalidToken(string $deviceToken, string $responseBody)
+    {
+        $invalidIndicators = [
+            'NotRegistered',
+            'InvalidRegistration',
+            'MissingRegistration',
+            'registration_token_not_registered',
+            'UNREGISTERED',
+            'NOT_FOUND',
+            'Requested entity was not found',
+        ];
+
+        foreach ($invalidIndicators as $indicator) {
+            if (str_contains($responseBody, $indicator)) {
+                try {
+                    \App\Models\User::where('fcm_token', $deviceToken)
+                        ->update(['fcm_token' => null]);
+                    Log::info('Cleared invalid FCM token', ['token' => substr($deviceToken, 0, 20) . '...']);
+                } catch (\Exception $ex) {
+                    Log::error('Error clearing invalid FCM token', ['error' => $ex->getMessage()]);
+                }
+                break;
+            }
         }
     }
 

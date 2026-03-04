@@ -29,12 +29,6 @@ if (firebase.apps.length) {
 // Handle background messages
 if (messaging) {
     messaging.onBackgroundMessage((payload) => {
-        // For notification payloads, browsers can auto-display push notifications.
-        // Returning here avoids duplicate toasts (auto + manual showNotification).
-        if (payload?.notification) {
-            return;
-        }
-
         const notificationTitle = payload?.notification?.title || payload?.data?.title || 'Notification';
         const notificationOptions = {
             body: payload?.notification?.body || payload?.data?.body || '',
@@ -42,6 +36,7 @@ if (messaging) {
             badge: '/favicon.svg',
             data: payload?.data || {},
             requireInteraction: true,
+            tag: payload?.data?.type || 'fcm-background',
             actions: [
                 {
                     action: 'view',
@@ -54,23 +49,48 @@ if (messaging) {
             ]
         };
 
+        // Always show explicitly from SW to support background/locked states consistently.
         self.registration.showNotification(notificationTitle, notificationOptions);
     });
 }
+
+// Fallback for browsers/devices where Firebase background handler is unreliable.
+self.addEventListener('push', (event) => {
+    try {
+        const payload = event.data ? event.data.json() : {};
+        const title = payload?.notification?.title || payload?.data?.title || 'Notification';
+        const options = {
+            body: payload?.notification?.body || payload?.data?.body || '',
+            icon: '/favicon.svg',
+            badge: '/favicon.svg',
+            data: payload?.data || {},
+            requireInteraction: true,
+            tag: payload?.data?.type || 'fcm-push-fallback',
+        };
+
+        event.waitUntil(self.registration.showNotification(title, options));
+    } catch (e) {
+        // Ignore malformed payloads to avoid crashing SW push handler.
+    }
+});
 
 // Handle notification click
 self.addEventListener('notificationclick', (event) => {
     event.notification.close();
 
-    const userRole = event.notification?.data?.user_role || 'waiter';
-    let url = '/';
-    if (userRole === 'waiter') {
-        url = '/waiter/orders';
-    } else if (userRole === 'kitchen') {
-        url = '/kitchen/orders';
-    } else if (userRole === 'admin' || userRole === 'super-admin') {
-        url = '/admin/orders';
+    const data = event.notification?.data || {};
+    const userRole = data.user_role || 'waiter';
+    let targetUrl = data.link || '/';
+
+    if (!data.link) {
+        if (userRole === 'waiter') {
+            targetUrl = '/waiter/orders';
+        } else if (userRole === 'kitchen') {
+            targetUrl = '/kitchen/orders';
+        } else if (userRole === 'admin' || userRole === 'super-admin') {
+            targetUrl = '/admin/orders';
+        }
     }
-    
-    event.waitUntil(clients.openWindow(url));
+
+    event.waitUntil(clients.openWindow(targetUrl));
 });

@@ -3,6 +3,7 @@
 namespace App\Livewire\Waiter;
 
 use App\Models\Order;
+use App\Models\OrderItem;
 use Livewire\Component;
 use Livewire\WithPagination;
 use Livewire\Attributes\On;
@@ -33,8 +34,11 @@ class OrderManager extends Component
     public function mount()
     {
         $this->authorize('view table orders');
-        
-        $latestOrder = Order::latest('id')->first();
+
+        $restaurantId = auth()->user()?->restaurant_id;
+        $latestOrder = Order::when($restaurantId, fn($q) => $q->where('restaurant_id', $restaurantId))
+            ->latest('id')
+            ->first();
         $this->lastKnownOrderId = $latestOrder ? $latestOrder->id : 0;
         $this->lastKitchenCheck = now()->toISOString();
     }
@@ -47,9 +51,13 @@ class OrderManager extends Component
 
     public function checkNewOrders()
     {
+        $restaurantId = auth()->user()?->restaurant_id;
+
         $newOrders = Order::where('id', '>', $this->lastKnownOrderId)
             ->with('restaurant')
+            ->when($restaurantId, fn($q) => $q->where('restaurant_id', $restaurantId))
             ->latest('id')
+            ->limit(5)
             ->get();
 
         if ($newOrders->isNotEmpty()) {
@@ -79,9 +87,14 @@ class OrderManager extends Component
 
     public function checkKitchenReady()
     {
-        $readyItems = \App\Models\OrderItem::where('status', 'ready')
+        $restaurantId = auth()->user()?->restaurant_id;
+
+        $readyItems = OrderItem::where('status', 'ready')
             ->where('updated_at', '>', $this->lastKitchenCheck)
             ->with(['order', 'menuItem.restaurant'])
+            ->when($restaurantId, fn($q) => $q->whereHas('menuItem', fn($q2) => $q2->where('restaurant_id', $restaurantId)))
+            ->latest('updated_at')
+            ->limit(30)
             ->get();
 
         if ($readyItems->isNotEmpty()) {
@@ -197,6 +210,9 @@ class OrderManager extends Component
             session()->flash('error', 'Please mark payment as paid before confirming the order.');
             return;
         }
+
+        // record which waiter confirmed the order so kitchen can notify the same user later
+        $order->update(['assigned_waiter_id' => auth()->id()]);
 
         $this->updateOrderStatus($orderId, 'confirmed');
     }
