@@ -123,18 +123,7 @@
                 tokenOptions.vapidKey = config.vapidKey;
             }
 
-            let token = null;
-            try {
-                // Force-refresh once to recover from stale/invalid registrations.
-                const existingToken = await messaging.getToken(tokenOptions);
-                if (existingToken) {
-                    await messaging.deleteToken(existingToken).catch(() => {});
-                }
-            } catch (e) {
-                console.warn('[FCM] Token reset skipped:', e);
-            }
-
-            token = await messaging.getToken(tokenOptions);
+            let token = await messaging.getToken(tokenOptions);
 
             if (token) {
                 await registerToken(token);
@@ -159,7 +148,6 @@
                     syncToken();
                 }
             });
-            setInterval(syncToken, 10 * 60 * 1000);
 
             // Ensure logout removes token from DB + browser push registration.
             const logoutForms = document.querySelectorAll('form[action$="/logout"]');

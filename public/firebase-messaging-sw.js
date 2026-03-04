@@ -54,26 +54,6 @@ if (messaging) {
     });
 }
 
-// Fallback for browsers/devices where Firebase background handler is unreliable.
-self.addEventListener('push', (event) => {
-    try {
-        const payload = event.data ? event.data.json() : {};
-        const title = payload?.notification?.title || payload?.data?.title || 'Notification';
-        const options = {
-            body: payload?.notification?.body || payload?.data?.body || '',
-            icon: '/favicon.svg',
-            badge: '/favicon.svg',
-            data: payload?.data || {},
-            requireInteraction: true,
-            tag: payload?.data?.type || 'fcm-push-fallback',
-        };
-
-        event.waitUntil(self.registration.showNotification(title, options));
-    } catch (e) {
-        // Ignore malformed payloads to avoid crashing SW push handler.
-    }
-});
-
 // Handle notification click
 self.addEventListener('notificationclick', (event) => {
     event.notification.close();
