@@ -1,6 +1,6 @@
 // Minimal, robust FCM setup for staff dashboards
 (function () {
-    const allowedRoles = ['waiter'];
+    const allowedRoles = ['waiter', 'kitchen'];
     const userRole = document.body.dataset.userRole || '';
     if (!allowedRoles.includes(userRole)) return;
     if (!('serviceWorker' in navigator) || !('Notification' in window)) return;
@@ -79,6 +79,20 @@
             tag: payload?.data?.type || 'fcm-foreground',
         };
 
+        if ('serviceWorker' in navigator) {
+            navigator.serviceWorker.getRegistration().then((registration) => {
+                if (registration) {
+                    registration.showNotification(title, options);
+                    return;
+                }
+
+                new Notification(title, options);
+            }).catch(() => {
+                new Notification(title, options);
+            });
+            return;
+        }
+
         new Notification(title, options);
     }
 
@@ -90,7 +104,11 @@
                 firebase.initializeApp(config);
             }
 
-            const swRegistration = await navigator.serviceWorker.register('/firebase-messaging-sw.js');
+            const swRegistration = await navigator.serviceWorker.register('/firebase-messaging-sw.js', {
+                scope: '/',
+            });
+            // Wait for an active service worker before requesting a push subscription.
+            await navigator.serviceWorker.ready;
             const permission = Notification.permission === 'default'
                 ? await Notification.requestPermission()
                 : Notification.permission;
@@ -98,17 +116,38 @@
             if (permission !== 'granted') return;
 
             const messaging = firebase.messaging();
-            let token = null;
-            try {
-                token = await messaging.getToken({ serviceWorkerRegistration: swRegistration });
-            } catch (error) {
-                console.warn('[FCM] getToken with SW registration failed, retrying:', error);
-                token = await messaging.getToken();
+            const tokenOptions = {
+                serviceWorkerRegistration: swRegistration,
+            };
+            if (config.vapidKey) {
+                tokenOptions.vapidKey = config.vapidKey;
             }
+
+            let token = await messaging.getToken(tokenOptions);
 
             if (token) {
                 await registerToken(token);
             }
+
+            const syncToken = async () => {
+                if (Notification.permission !== 'granted') return;
+                try {
+                    const freshToken = await messaging.getToken(tokenOptions);
+                    if (freshToken && freshToken !== token) {
+                        token = freshToken;
+                        await registerToken(freshToken);
+                    }
+                } catch (error) {
+                    console.warn('[FCM] Token refresh failed:', error);
+                }
+            };
+
+            window.addEventListener('focus', syncToken);
+            document.addEventListener('visibilitychange', () => {
+                if (!document.hidden) {
+                    syncToken();
+                }
+            });
 
             // Ensure logout removes token from DB + browser push registration.
             const logoutForms = document.querySelectorAll('form[action$="/logout"]');

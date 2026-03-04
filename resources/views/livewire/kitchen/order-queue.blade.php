@@ -1,4 +1,8 @@
 <div class="p-6" wire:poll.5s="pollQueue">
+    <div wire:loading.flex wire:target="refreshData,selectOrder,startPreparing,markReady,updateItemStatus,closeOrderDetails,dismissAlert" class="fixed inset-0 z-[60] items-center justify-center bg-black/30 backdrop-blur-[1px]">
+        <div class="bg-white text-gray-800 px-4 py-2 rounded-lg shadow font-medium">Processing... please wait</div>
+    </div>
+
     @if(isset($error))
         <div class="bg-red-50 border border-red-200 rounded-lg p-8 text-center">
             <div class="text-red-400 text-6xl mb-4">⚠️</div>
@@ -7,9 +11,9 @@
             <div class="bg-white rounded-lg p-4 mt-4">
                 <h3 class="font-semibold text-gray-800 mb-2">Available Test Accounts:</h3>
                 <div class="text-sm text-gray-600 space-y-1">
-                    <p><strong>Waiter:</strong> waiter@gourmetkitchen.com / password</p>
-                    <p><strong>Kitchen:</strong> kitchen@gourmetkitchen.com / password</p>
-                    <p><strong>Admin:</strong> admin@gourmetkitchen.com / password</p>
+                    <p><strong>Waiter:</strong> waiter@admin.com / password</p>
+                    <p><strong>Kitchen:</strong> kitchen@admin.com / password</p>
+                    <p><strong>Admin:</strong> admin@admin.com / password</p>
                 </div>
             </div>
         </div>
@@ -18,7 +22,7 @@
 
     <div class="flex justify-between items-center mb-6">
         <h1 class="text-2xl font-bold text-gray-900 dark:text-white">Kitchen Order Queue</h1>
-        <button wire:click="refreshData" class="bg-orange-500 text-white px-4 py-2 rounded hover:bg-orange-600 transition-colors">
+        <button wire:click="refreshData" wire:loading.attr="disabled" wire:target="refreshData" class="bg-orange-500 text-white px-4 py-2 rounded hover:bg-orange-600 transition-colors disabled:opacity-60 disabled:cursor-not-allowed">
             <svg class="w-4 h-4 inline mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"></path>
             </svg>
@@ -63,7 +67,7 @@
                             @else border-green-400
                             @endif
                             p-4 cursor-pointer hover:shadow-lg transition-all duration-200"
-                             wire:click="selectOrder({{ $order->id }})">
+                             wire:click="selectOrder({{ $order->id }})" wire:loading.class="opacity-60" wire:target="selectOrder">
                             <div class="flex justify-between items-start mb-3">
                                 <div>
                                     <h3 class="font-semibold text-gray-900 dark:text-white">Order #{{ $order->order_number }}</h3>
@@ -124,15 +128,15 @@
                                 </div>
                                 <div class="space-x-2">
                                     @if($order->status === 'confirmed')
-                                        <button wire:click.stop="startPreparing({{ $order->id }})" 
-                                            class="bg-orange-500 text-white px-3 py-1 rounded text-sm hover:bg-orange-600 transition-colors">
+                                        <button wire:click.stop="startPreparing({{ $order->id }})" wire:loading.attr="disabled" wire:target="startPreparing"
+                                            class="bg-orange-500 text-white px-3 py-1 rounded text-sm hover:bg-orange-600 transition-colors disabled:opacity-60 disabled:cursor-not-allowed">
                                             🔥 Start Preparing
                                         </button>
                                     @endif
                                     
                                     @if($order->status === 'preparing')
-                                        <button wire:click.stop="markReady({{ $order->id }})" 
-                                            class="bg-green-500 text-white px-3 py-1 rounded text-sm hover:bg-green-600 transition-colors">
+                                        <button wire:click.stop="markReady({{ $order->id }})" wire:loading.attr="disabled" wire:target="markReady"
+                                            class="bg-green-500 text-white px-3 py-1 rounded text-sm hover:bg-green-600 transition-colors disabled:opacity-60 disabled:cursor-not-allowed">
                                             ✅ Mark Ready
                                         </button>
                                     @endif
@@ -157,7 +161,7 @@
                             @else border-gray-400
                             @endif
                             p-4 cursor-pointer hover:shadow-md transition-all duration-200"
-                             wire:click="selectOrder({{ $order->id }})">
+                             wire:click="selectOrder({{ $order->id }})" wire:loading.class="opacity-60" wire:target="selectOrder">
                             <div class="flex justify-between items-start mb-2">
                                 <div>
                                     <h3 class="font-semibold text-gray-900 dark:text-white">Order #{{ $order->order_number }}</h3>
@@ -204,7 +208,7 @@
                                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 17h2a2 2 0 002-2v-4a2 2 0 00-2-2H5a2 2 0 00-2 2v4a2 2 0 002 2h2m2 4h6a2 2 0 002-2v-4a2 2 0 00-2-2H9a2 2 0 00-2 2v4a2 2 0 002 2zm8-12V5a2 2 0 00-2-2H9a2 2 0 00-2 2v4h10z"></path>
                                 </svg>
                             </button>
-                            <button wire:click="closeOrderDetails" class="text-gray-400 dark:text-gray-500 hover:text-gray-600 dark:hover:text-gray-300 transition-colors">
+                            <button wire:click="closeOrderDetails" wire:loading.attr="disabled" wire:target="closeOrderDetails" class="text-gray-400 dark:text-gray-500 hover:text-gray-600 dark:hover:text-gray-300 transition-colors disabled:opacity-60 disabled:cursor-not-allowed">
                                 <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
                                 </svg>
@@ -296,15 +300,15 @@
                                     @if($selectedOrder->status === 'confirmed' || $selectedOrder->status === 'preparing')
                                         <div class="flex space-x-2 mt-2">
                                             @if($item->status === 'pending')
-                                                <button wire:click="updateItemStatus({{ $item->id }}, 'preparing')" 
-                                                    class="bg-orange-500 text-white px-2 py-1 rounded text-xs hover:bg-orange-600 transition-colors">
+                                                <button wire:click="updateItemStatus({{ $item->id }}, 'preparing')" wire:loading.attr="disabled" wire:target="updateItemStatus"
+                                                    class="bg-orange-500 text-white px-2 py-1 rounded text-xs hover:bg-orange-600 transition-colors disabled:opacity-60 disabled:cursor-not-allowed">
                                                     🔥 Start
                                                 </button>
                                             @endif
                                             
                                             @if($item->status === 'preparing')
-                                                <button wire:click="updateItemStatus({{ $item->id }}, 'ready')" 
-                                                    class="bg-green-500 text-white px-2 py-1 rounded text-xs hover:bg-green-600 transition-colors">
+                                                <button wire:click="updateItemStatus({{ $item->id }}, 'ready')" wire:loading.attr="disabled" wire:target="updateItemStatus"
+                                                    class="bg-green-500 text-white px-2 py-1 rounded text-xs hover:bg-green-600 transition-colors disabled:opacity-60 disabled:cursor-not-allowed">
                                                     ✅ Ready
                                                 </button>
                                             @endif

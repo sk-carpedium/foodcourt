@@ -15,6 +15,7 @@ class Order extends Model
         'order_number',
         'restaurant_id',
         'user_id',
+        'assigned_waiter_id',
         'customer_name',
         'customer_phone',
         'customer_email',
@@ -51,6 +52,11 @@ class Order extends Model
                 $order->order_number = 'ORD-' . strtoupper(uniqid());
             }
         });
+    }
+
+    public function assignedWaiter(): BelongsTo
+    {
+        return $this->belongsTo(User::class, 'assigned_waiter_id');
     }
 
     public function restaurant(): BelongsTo

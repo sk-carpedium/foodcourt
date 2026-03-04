@@ -107,10 +107,6 @@ class Checkout extends Component
             ]);
         }
 
-        // Send notification to waiter
-        $notificationService = app(\App\Services\OrderNotificationService::class);
-        $notificationService->notifyWaiterNewOrder($order);
-
         // Clear cart
         session()->forget('cart');
 
