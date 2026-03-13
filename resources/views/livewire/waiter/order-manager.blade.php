@@ -146,6 +146,87 @@
         </div>
     @endif
 
+    <!-- Status Tabs (Kitchen-style) -->
+    <div class="mb-6 border-b border-gray-200">
+        <div class="flex overflow-x-auto">
+            @php
+                $statusTabOptions = ['' => 'All'] + $statusOptions;
+            @endphp
+            @foreach($statusTabOptions as $value => $label)
+                @php
+                    $tabCount = $value === ''
+                        ? ($allCount ?? 0)
+                        : ($statusCounts[$value] ?? 0);
+
+                    $isActive = $statusFilter === $value;
+                @endphp
+                <button
+                    wire:click="$set('statusFilter', '{{ $value }}')"
+                    class="px-5 py-3 text-sm font-semibold border-b-2 transition-colors whitespace-nowrap flex items-center
+                        @if($value === '')
+                            {{ $isActive ? 'border-blue-500 text-blue-600' : 'border-transparent text-gray-500 hover:text-gray-700' }}
+                        @elseif($value === 'pending')
+                            {{ $isActive ? 'border-yellow-500 text-yellow-600' : 'border-transparent text-gray-500 hover:text-gray-700' }}
+                        @elseif($value === 'confirmed')
+                            {{ $isActive ? 'border-blue-500 text-blue-600' : 'border-transparent text-gray-500 hover:text-gray-700' }}
+                        @elseif($value === 'preparing')
+                            {{ $isActive ? 'border-orange-500 text-orange-600' : 'border-transparent text-gray-500 hover:text-gray-700' }}
+                        @elseif($value === 'ready')
+                            {{ $isActive ? 'border-green-500 text-green-600' : 'border-transparent text-gray-500 hover:text-gray-700' }}
+                        @elseif($value === 'served')
+                            {{ $isActive ? 'border-purple-500 text-purple-600' : 'border-transparent text-gray-500 hover:text-gray-700' }}
+                        @elseif($value === 'completed')
+                            {{ $isActive ? 'border-gray-500 text-gray-700' : 'border-transparent text-gray-500 hover:text-gray-700' }}
+                        @else
+                            {{ $isActive ? 'border-blue-500 text-blue-600' : 'border-transparent text-gray-500 hover:text-gray-700' }}
+                        @endif
+                    ">
+                    <span class="flex items-center gap-1.5">
+                        @if($value === '')
+                            📋
+                        @elseif($value === 'pending')
+                            ⏳
+                        @elseif($value === 'confirmed')
+                            🔔
+                        @elseif($value === 'preparing')
+                            🔥
+                        @elseif($value === 'ready')
+                            ✅
+                        @elseif($value === 'served')
+                            🍽️
+                        @elseif($value === 'completed')
+                            ✔️
+                        @endif
+                        <span>{{ $label }}</span>
+                        @if($tabCount > 0)
+                            <span class="ml-1.5 rounded-full text-xs font-bold px-2 py-0.5
+                                @if($value === '')
+                                    bg-blue-500 text-white
+                                @elseif($value === 'pending')
+                                    bg-yellow-500 text-white
+                                @elseif($value === 'confirmed')
+                                    bg-blue-500 text-white
+                                @elseif($value === 'preparing')
+                                    bg-orange-500 text-white
+                                @elseif($value === 'ready')
+                                    bg-green-500 text-white
+                                @elseif($value === 'served')
+                                    bg-purple-500 text-white
+                                @elseif($value === 'completed')
+                                    bg-gray-500 text-white
+                                @else
+                                    bg-slate-500 text-white
+                                @endif
+                            ">
+                                {{ $tabCount }}
+                            </span>
+                        @endif
+                    </span>
+                </button>
+            @endforeach
+        </div>
+    </div>
+
     <!-- Orders Grid -->
     <div class="space-y-6">
         @forelse ($orders as $order)

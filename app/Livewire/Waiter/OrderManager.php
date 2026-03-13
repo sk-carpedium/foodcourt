@@ -138,9 +138,9 @@ class OrderManager extends Component
     public function render()
     {
         $user = auth()->user();
-        
+
         $query = Order::with(['orderItems.menuItem.restaurant', 'restaurant']);
-        
+
         if ($this->restaurantFilter) {
             $query->where('restaurant_id', $this->restaurantFilter);
         } elseif ($user && $user->restaurant_id && !$this->restaurantFilter) {
@@ -158,9 +158,29 @@ class OrderManager extends Component
         $orders = $query->orderBy('created_at', 'desc')->paginate(10);
 
         $restaurants = \App\Models\Restaurant::where('is_active', true)->get();
-        
+
         // Count of pending orders for badge
         $pendingCount = Order::where('status', 'pending')->count();
+
+        // Status-wise counts for tabs (respecting restaurant + order type filters)
+        $countQuery = Order::query();
+
+        if ($this->restaurantFilter) {
+            $countQuery->where('restaurant_id', $this->restaurantFilter);
+        } elseif ($user && $user->restaurant_id && !$this->restaurantFilter) {
+            $countQuery->where('restaurant_id', $user->restaurant_id);
+        }
+
+        if ($this->orderTypeFilter) {
+            $countQuery->where('order_type', $this->orderTypeFilter);
+        }
+
+        $statusCounts = $countQuery
+            ->selectRaw('status, COUNT(*) as aggregate')
+            ->groupBy('status')
+            ->pluck('aggregate', 'status');
+
+        $allCount = $statusCounts->sum();
 
         return view('livewire.waiter.order-manager', [
             'orders' => $orders,
@@ -178,7 +198,9 @@ class OrderManager extends Component
                 'dine_in' => 'Dine In',
                 'takeaway' => 'Takeaway',
                 'delivery' => 'Delivery',
-            ]
+            ],
+            'statusCounts' => $statusCounts,
+            'allCount' => $allCount,
         ]);
     }
 

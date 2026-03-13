@@ -14,6 +14,8 @@
     }
 
     const csrfToken = document.querySelector('meta[name="csrf-token"]')?.content || '';
+    const permissionPromptKey = 'fcm_permission_prompted_at';
+    const permissionPromptCooldownMs = 24 * 60 * 60 * 1000;
 
     function loadScript(src) {
         return new Promise((resolve, reject) => {
@@ -67,6 +69,40 @@
         });
     }
 
+    function canPromptForPermission() {
+        if (Notification.permission !== 'default') return false;
+        try {
+            const lastPromptAt = Number(localStorage.getItem(permissionPromptKey) || 0);
+            return !lastPromptAt || (Date.now() - lastPromptAt > permissionPromptCooldownMs);
+        } catch (_) {
+            return true;
+        }
+    }
+
+    function markPermissionPrompted() {
+        try {
+            localStorage.setItem(permissionPromptKey, String(Date.now()));
+        } catch (_) {
+            // Ignore storage errors and continue normal flow.
+        }
+    }
+
+    function waitForFirstUserGesture() {
+        return new Promise((resolve) => {
+            const events = ['click', 'keydown', 'touchstart'];
+            const onGesture = () => {
+                events.forEach((eventName) => {
+                    window.removeEventListener(eventName, onGesture, true);
+                });
+                resolve();
+            };
+
+            events.forEach((eventName) => {
+                window.addEventListener(eventName, onGesture, { once: true, capture: true, passive: true });
+            });
+        });
+    }
+
     function showForegroundNotification(payload) {
         if (Notification.permission !== 'granted') return;
 
@@ -109,9 +145,22 @@
             });
             // Wait for an active service worker before requesting a push subscription.
             await navigator.serviceWorker.ready;
-            const permission = Notification.permission === 'default'
-                ? await Notification.requestPermission()
-                : Notification.permission;
+
+            let permission = Notification.permission;
+            if (permission === 'denied') return;
+
+            if (permission === 'default') {
+                if (!canPromptForPermission()) return;
+
+                // Ask only after an intentional user gesture to avoid abusive prompt heuristics.
+                await waitForFirstUserGesture();
+                if (Notification.permission !== 'default') {
+                    permission = Notification.permission;
+                } else {
+                    markPermissionPrompted();
+                    permission = await Notification.requestPermission();
+                }
+            }
 
             if (permission !== 'granted') return;
 
